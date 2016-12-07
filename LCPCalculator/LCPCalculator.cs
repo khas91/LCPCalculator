@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Text;
+using System.IO;
 using System.Threading.Tasks;
 using TermLogic;
 
@@ -33,41 +34,43 @@ namespace LCPCalculator
             Options options = new Options();
 
             if (!CommandLine.Parser.Default.ParseArguments(args, options))
-                return -1;
-
-            OrionTerm min_term = new OrionTerm(options.min_term);
-            OrionTerm max_term = new OrionTerm(options.max_term);
-
-            List<Tuple<String, String, OrionTerm>> LCPs = new List<Tuple<string, string, OrionTerm>>();
-            Dictionary<Tuple<String, String>, OrionTerm> prevLCPs = new Dictionary<Tuple<string, string>, OrionTerm>();
-
-            while (min_term <= max_term)
             {
-                LCPs = LCPs.Concat(calcLCPs(min_term.ToString(), prevLCPs)).ToList();
-
-                foreach (Tuple<String, String, OrionTerm> LCP in LCPs)
-                {
-                    Tuple<String, String> key = new Tuple<string, string>(LCP.Item1, LCP.Item2);
-                    prevLCPs.Add(key, LCP.Item3);
-                }
-
-                min_term++;
+                return -1;
             }
 
-            Console.WriteLine("dub");
+            List<Tuple<String, String, OrionTerm>> previouslyCalculatedLCPs = new List<Tuple<string, string, OrionTerm>>();
+            OrionTerm i = new OrionTerm(options.min_term);
+            OrionTerm max_term = new OrionTerm(options.max_term);
+
+            while (i <= max_term)
+            {
+                previouslyCalculatedLCPs = previouslyCalculatedLCPs.Concat(calculateLCPsForTerm(i, previouslyCalculatedLCPs)).ToList();
+                i++;
+            }
+                    
+            StreamWriter file = new StreamWriter("LCPs.csv");
+
+            foreach (Tuple<String, String, OrionTerm> LCP in previouslyCalculatedLCPs)
+            {
+                file.WriteLine(LCP.Item1 + "," + LCP.Item2 + "," + LCP.Item3);
+            }
+
+            file.Close();
 
             return 0;
+
         }
 
-        private static List<Tuple<String,String, OrionTerm>> calcLCPs(String term, Dictionary<Tuple<String, String>, OrionTerm> prevLCPs)
+        public static List<Tuple<String, String, OrionTerm>> calculateLCPsForTerm(OrionTerm term, List<Tuple<String, String, OrionTerm>> previouslyCalculatedLCPs)
         {
-            SqlConnection conn = new SqlConnection("Server=vulcan;database=MIS;Trusted_Connection=yes");
-            Dictionary<String, String[]> courseLCPDictionary = new Dictionary<string, String[]>();
-            Dictionary<String, List<String>> prevStudentLCPs = new Dictionary<string, List<string>>();
-            Dictionary<String, List<String>> calculatedLCPs = new Dictionary<string, List<string>>();
-            List<String> courseList = new List<String>();
-            OrionTerm runTerm = new OrionTerm(term);
-            List<Tuple<String, String, OrionTerm>> totalLCPs = new List<Tuple<string, string, OrionTerm>>();
+            SqlConnection conn = new SqlConnection("server=vulcan;Trusted_Connection=true;database=StateSubmission");
+            SqlCommand comm;
+            SqlDataReader reader;
+
+            Dictionary<String, String[]> LCPDictionary = new Dictionary<string, string[]>();
+            Dictionary<String, List<String>> previouslyReportedLCPs = new Dictionary<string, List<String>>();
+            List<Tuple<String, String, OrionTerm>> calculatedLCPs = new List<Tuple<string, string, OrionTerm>>();
+            List<String> coursePrefixes = new List<string>();
 
             try
             {
@@ -75,103 +78,105 @@ namespace LCPCalculator
             }
             catch (Exception)
             {
-
+                
                 throw;
             }
 
-            SqlCommand comm = new SqlCommand("SELECT                                                    "
-                                             + "       *                                                 "
-                                             + "   FROM                                                  "
-                                             + "       MIS.dbo.ST_OCP_LCP_A_55 ocp                       "
-                                             + "   WHERE                                                 "
-                                             + "       COMP_POINT_TY = 'LS'                          "
-                                             + "       AND (END_TRM = '' OR END_TRM >= '" + runTerm + "')"
-                                             + "       AND EFF_TRM <= '" + runTerm + "'", conn);
+            comm = new SqlCommand("SELECT                                                       "
+	                              +"     CRS_ID, COMP_POINT_ID, COMP_POINT_SEQ                  "
+                                  +" FROM                                                       "
+	                              +"     MIS.dbo.ST_OCP_LCP_A_55 lcp                            "
+                                  +" WHERE                                                      "
+	                              +"     lcp.COMP_POINT_TY = 'LS'                               "
+	                              +"     AND lcp.EFF_TRM <= '" + term + "'                      "
+	                              +"     AND (lcp.END_TRM = '' OR lcp.END_TRM >= '" + term + "')"
+                                  +" ORDER BY                                                   "
+                                  +"     lcp.CRS_ID, lcp.COMP_POINT_SEQ DESC", conn);
 
-            SqlDataReader reader = comm.ExecuteReader();
+            reader = comm.ExecuteReader();
 
             while (reader.Read())
             {
-                String courseID = reader["CRS_ID"].ToString().Replace("*", "");
-                String LCPValue = reader["COMP_POINT_ID"].ToString();
-                String min_term_string = reader["EFF_TRM"].ToString();
-                String max_term_string = reader["END_TRM"].ToString();
-                OrionTerm min_term = new OrionTerm(reader["EFF_TRM"].ToString());
-                OrionTerm max_term = max_term_string == "" ? null : new OrionTerm(reader["END_TRM"].ToString());
+                String coursePrefix = reader["CRS_ID"].ToString().Replace("*", "");
+                String lcpValue = reader["COMP_POINT_ID"].ToString();
                 int priority = int.Parse(reader["COMP_POINT_SEQ"].ToString());
 
-                if (!courseLCPDictionary.ContainsKey(courseID))
+                if (!LCPDictionary.ContainsKey(coursePrefix))
                 {
-                    courseLCPDictionary.Add(courseID, new String[19]);
+                    LCPDictionary.Add(coursePrefix, new String[priority]);
                 }
 
-                if (min_term < runTerm && (max_term == null || max_term > runTerm))
+                if (!coursePrefixes.Contains(coursePrefix))
                 {
-                    courseLCPDictionary[courseID][priority - 1] = LCPValue;
+                    coursePrefixes.Add(coursePrefix);
                 }
 
-                if (!courseList.Contains(courseID))
-                {
-                    courseList.Add(courseID);
-                }
+                LCPDictionary[coursePrefix][priority - 1] = lcpValue;
             }
 
             reader.Close();
 
-            comm = new SqlCommand("SELECT                                                                                   "
-                                  + "      *                                                                                 "
-                                  + "  FROM                                                                                  "
-                                  + "      StateSubmission.SDB.RecordType5 r5                                                "
-                                  + "      INNER JOIN MIS.dbo.vwTermYearXwalk xwalk ON r5.DE1028 = xwalk.StateReportingTerm  "
-                                  + "  WHERE                                                                                 "
-                                  + "      r5.DE2105 <> 'Z'                                                                  "
-                                  + "      AND xwalk.OrionTerm <= '" + runTerm + "'                                          "
-                                  + "      AND r5.SubmissionType = 'E'                                                       "
-                                  + "      AND xwalk.StateReportingYear IN ('" + runTerm.getStateReportingYear() + "','"
-                                  + runTerm.getStateReportingYear().prevReportingYear() + "')", conn);
+            comm = new SqlCommand("SELECT                                                                                "
+	                              +"     DE1021,OrionTerm,DE2105                                                         "
+                                  +" FROM                                                                                "
+	                              +"     StateSubmission.SDB.recordType5 r5                                              "
+	                              +"     INNER JOIN MIS.dbo.vwTermYearXwalk xwalk ON xwalk.StateReportingTerm = r5.DE1028"
+                                  +" WHERE                                                                               "
+	                              +"     xwalk.OrionTerm < '" + term + "'                                                "
+	                              +"     AND xwalk.StateReportingYear IN ('" + term.getStateReportingYear() + "','       "
+                                  + term.getStateReportingYear().prevReportingYear() + "')                               "
+	                              +"     AND r5.SubmissionType = 'E'                                                     "
+	                              +"     AND r5.DE2105 <> 'Z'                                                            "
+                                  +" ORDER BY                                                                            "
+	                              +"     DE1021", conn);
 
             reader = comm.ExecuteReader();
 
             while (reader.Read())
             {
                 String studentID = reader["DE1021"].ToString();
-                String LCPvalue = reader["DE2105"].ToString();
+                String LCP = reader["DE2105"].ToString();
 
-                if (!prevStudentLCPs.ContainsKey(studentID))
+                OrionTerm LCPterm = new OrionTerm(reader["OrionTerm"].ToString());
+
+                if (!previouslyReportedLCPs.ContainsKey(studentID))
                 {
-                    prevStudentLCPs.Add(studentID, new List<string>());
+                    previouslyReportedLCPs.Add(studentID, new List<string>());
                 }
 
-                prevStudentLCPs[studentID].Add(LCPvalue);
+                previouslyReportedLCPs[studentID].Add(LCP);
             }
 
             reader.Close();
 
-            comm = new SqlCommand("SELECT                                                               "
-                                  + "      *                                                            "
-                                  + "  FROM                                                             "
-                                  + "      StateSubmission.SDB.RecordType6 r6                           "
-                                  + "  WHERE                                                            "
-                                  + "      r6.DE3007 IN ('A','B','C','D','P','S')                       "
-                                  + "      AND LEFT(r6.DE3008, 3) IN ('ASE','AHS')                      "
-                                  + "      AND r6.DE1028 = '" + runTerm.ToStateReportingTermShort() + "'"
-                                  + "  ORDER BY                                                         "
-                                  + "      r6.DE1021", conn);
+            comm = new SqlCommand("SELECT                                                          "
+	                              +"     r6.DE1021, r6.DE3008                                      "
+                                  +" FROM                                                          "
+	                              +"     StateSubmission.SDB.RecordType6 r6                        "
+                                  +" WHERE                                                         "
+	                              +"     LEFT(r6.DE3008, 3) IN ('AHS','ASE')                       "
+	                              +"     AND r6.DE1028 = '" + term.ToStateReportingTermShort() + "'"
+	                              +"     AND r6.SubmissionType = 'E'                               "
+	                              +"     AND r6.DE3007 IN ('A','B','C','D','P','S')                "
+                                  +" ORDER BY                                                      "
+	                              +"     r6.DE1021", conn);
 
             reader = comm.ExecuteReader();
+
+            String termS = term.ToString();
 
             while (reader.Read())
             {
                 String courseID = reader["DE3008"].ToString();
                 String studentID = reader["DE1021"].ToString();
-                OrionTerm dbTerm = new StateReportingTermShort(reader["DE1028"].ToString()).ToOrionTerm();
+
                 String[] eligibleLCPs = null;
 
-                foreach (String coursePrefix in courseList)
+                foreach (String coursePrefix in coursePrefixes)
                 {
-                    if (String.Compare(coursePrefix, 0, courseID, 0, coursePrefix.Length) == 0)
+                    if (String.Compare(courseID, 0, coursePrefix, 0, coursePrefix.Length) == 0)
                     {
-                        eligibleLCPs = courseLCPDictionary[coursePrefix];
+                        eligibleLCPs = LCPDictionary[coursePrefix];
                     }
                 }
 
@@ -180,34 +185,51 @@ namespace LCPCalculator
                     continue;
                 }
 
+                List<String> studentLCPs = previouslyReportedLCPs.ContainsKey(studentID) ? previouslyReportedLCPs[studentID] : new List<String>();
+                
                 for (int i = 0; i < eligibleLCPs.Length; i++)
                 {
-                    if (eligibleLCPs[i] != null
-                        && (!prevStudentLCPs.ContainsKey(studentID) || !prevStudentLCPs[studentID].Contains(eligibleLCPs[i])))
+                    if (eligibleLCPs[i] == null)
                     {
-                        Tuple<String, String> key = new Tuple<string, string>(studentID, eligibleLCPs[i]);
+                        continue;
+                    }
 
-                        if (!calculatedLCPs.ContainsKey(studentID))
+                    bool previouslyCalculated = false;
+
+                    if (!studentLCPs.Contains(eligibleLCPs[i]))
+                    {                     
+                        foreach (Tuple<String, String, OrionTerm> previouslyCalculatedLCP in previouslyCalculatedLCPs)
                         {
-                            calculatedLCPs.Add(studentID, new List<String>());
+                            if (previouslyCalculatedLCP.Item1 == studentID && previouslyCalculatedLCP.Item2 == eligibleLCPs[i])
+                            {
+                                previouslyCalculated = true;
+                                break;
+                            }
                         }
-                        if (!calculatedLCPs[studentID].Contains(eligibleLCPs[i]) &&
-                            (!prevLCPs.ContainsKey(key) || (prevLCPs[key].getStateReportingYear() != runTerm.getStateReportingYear()
-                            && prevLCPs[key].getStateReportingYear() != runTerm.getStateReportingYear().prevReportingYear())))
+
+                        foreach (Tuple<String, String, OrionTerm> previouslyCalculatedLCP in calculatedLCPs)
                         {
-                            calculatedLCPs[studentID].Add(eligibleLCPs[i]);
-                            totalLCPs.Add(new Tuple<string, string, OrionTerm>(studentID, eligibleLCPs[i], dbTerm));
+                            if (previouslyCalculatedLCP.Item1 == studentID && previouslyCalculatedLCP.Item2 == eligibleLCPs[i])
+                            {
+                                previouslyCalculated = true;
+                                break;
+                            }
                         }
-                        break;
+
+                        if (!previouslyCalculated)
+                        {
+                            Tuple<String, String, OrionTerm> newLCP = new Tuple<string, string, OrionTerm>(studentID, eligibleLCPs[i], term);
+                            calculatedLCPs.Add(newLCP);
+                            continue;
+                        }
                     }
                 }
             }
 
             reader.Close();
-
             conn.Close();
 
-            return totalLCPs;
+            return calculatedLCPs;
         }
     }
 
