@@ -116,26 +116,30 @@ namespace LCPCalculator
 
             reader.Close();
 
-            comm = new SqlCommand("SELECT                                                                                "
-	                              +"     DE1021,OrionTerm,DE2105                                                         "
-                                  +" FROM                                                                                "
-	                              +"     StateSubmission.SDB.recordType5 r5                                              "
-	                              +"     INNER JOIN MIS.dbo.vwTermYearXwalk xwalk ON xwalk.StateReportingTerm = r5.DE1028"
-                                  +" WHERE                                                                               "
-	                              +"     xwalk.OrionTerm < '" + term + "'                                                "
-	                              +"     AND xwalk.StateReportingYear IN ('" + term.getStateReportingYear() + "','       "
-                                  + term.getStateReportingYear().prevReportingYear() + "')                               "
-	                              +"     AND r5.SubmissionType = 'E'                                                     "
-	                              +"     AND r5.DE2105 <> 'Z'                                                            "
-                                  +" ORDER BY                                                                            "
-	                              +"     DE1021", conn);
+            comm = new SqlCommand("SELECT                                                                                                                       "
+                                  +"       CASE                                                                                                                 "
+		                          +"          WHEN prev.PREV_STDNT_SSN IS NULL THEN r5.DE1021                                                                   "
+		                          +"          ELSE stdnt.STUDENT_SSN                                                                                            "
+	                              +"      END AS [Student_SSN]                                                                                                  "
+	                              +"       ,OrionTerm,DE2105                                                                                                    "
+                                  +"   FROM                                                                                                                     "
+                                  +"       StateSubmission.SDB.recordType5 r5                                                                                   "
+	                              +"       INNER JOIN MIS.dbo.vwTermYearXwalk xwalk ON xwalk.StateReportingTerm = r5.DE1028                                     "
+	                              +"       LEFT JOIN MIS.dbo.ST_STDNT_A_PREV_STDNT_SSN_USED_125 prev ON prev.PREV_STDNT_SSN_TY + prev.PREV_STDNT_SSN = r5.DE1021"
+	                              +"       LEFT JOIN MIS.dbo.ST_STDNT_A_125 stdnt ON stdnt.[ISN_ST_STDNT_A] = prev.[ISN_ST_STDNT_A]                             "
+                                  +"   WHERE                                                                                                                    "
+                                  +"       xwalk.OrionTerm < '" + term + "'                                                                                     "
+                                  +"       AND r5.SubmissionType = 'E'                                                                                          "
+                                  +"       AND r5.DE2105 <> 'Z'                                                                                                 "
+                                  +"   ORDER BY                                                                                                                 "
+                                  +"       [Student_SSN]", conn);
 
             reader = comm.ExecuteReader();
 
             while (reader.Read())
             {
-                String studentID = reader["DE1021"].ToString();
-                String LCP = reader["DE2105"].ToString();
+                String studentID = reader["Student_SSN"].ToString().Trim();
+                String LCP = reader["DE2105"].ToString().Trim();
 
                 OrionTerm LCPterm = new OrionTerm(reader["OrionTerm"].ToString());
 
@@ -149,17 +153,22 @@ namespace LCPCalculator
 
             reader.Close();
 
-            comm = new SqlCommand("SELECT                                                          "
-	                              +"     r6.DE1021, r6.DE3008                                      "
-                                  +" FROM                                                          "
-	                              +"     StateSubmission.SDB.RecordType6 r6                        "
-                                  +" WHERE                                                         "
-	                              +"     LEFT(r6.DE3008, 3) IN ('AHS','ASE')                       "
-	                              +"     AND r6.DE1028 = '" + term.ToStateReportingTermShort() + "'"
-	                              +"     AND r6.SubmissionType = 'E'                               "
-	                              +"     AND r6.DE3007 IN ('A','B','C','D','P','S')                "
-                                  +" ORDER BY                                                      "
-	                              +"     r6.DE1021", conn);
+            comm = new SqlCommand("SELECT                                                                                                                      "
+                                  +"      CASE                                                                                                                 "
+		                          +"          WHEN prev.PREV_STDNT_SSN IS NULL THEN r6.DE1021                                                                  "
+		                          +"          ELSE stdnt.STUDENT_SSN                                                                                           "
+	                              +"      END AS [Student_SSN], r6.DE3008                                                                                      "
+                                  +"  FROM                                                                                                                     "
+                                  +"      StateSubmission.SDB.RecordType6 r6                                                                                   "
+	                              +"      LEFT JOIN MIS.dbo.ST_STDNT_A_PREV_STDNT_SSN_USED_125 prev ON prev.PREV_STDNT_SSN_TY + prev.PREV_STDNT_SSN = r6.DE1021"
+	                              +"      LEFT JOIN MIS.dbo.ST_STDNT_A_125 stdnt ON stdnt.[ISN_ST_STDNT_A] = prev.[ISN_ST_STDNT_A]                             "                    
+                                  +"  WHERE                                                                                                                    "
+                                  +"      LEFT(r6.DE3008, 3) IN ('AHS','ASE')                                                                                  "
+                                  +"      AND r6.DE1028 = '" + term.ToStateReportingTermShort() + "'                                                           "
+                                  +"      AND r6.SubmissionType = 'E'                                                                                          "
+                                  +"      AND r6.DE3007 IN ('A','B','C','D','P','S')                                                                           "
+                                  +"  ORDER BY                                                                                                                 "
+                                  +"      [Student_SSN]", conn);
 
             reader = comm.ExecuteReader();
 
@@ -167,8 +176,8 @@ namespace LCPCalculator
 
             while (reader.Read())
             {
-                String courseID = reader["DE3008"].ToString();
-                String studentID = reader["DE1021"].ToString();
+                String courseID = reader["DE3008"].ToString().Trim();
+                String studentID = reader["Student_SSN"].ToString().Trim();
 
                 String[] eligibleLCPs = null;
 
@@ -220,7 +229,7 @@ namespace LCPCalculator
                         {
                             Tuple<String, String, OrionTerm> newLCP = new Tuple<string, string, OrionTerm>(studentID, eligibleLCPs[i], term);
                             calculatedLCPs.Add(newLCP);
-                            continue;
+                            break;
                         }
                     }
                 }
