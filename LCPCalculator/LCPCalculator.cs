@@ -8,6 +8,7 @@ using System.Text;
 using System.IO;
 using System.Threading.Tasks;
 using TermLogic;
+using System.Globalization;
 
 namespace LCPCalculator
 {
@@ -47,7 +48,7 @@ namespace LCPCalculator
                 previouslyCalculatedLCPs = previouslyCalculatedLCPs.Concat(calculateLCPsForTerm(i, previouslyCalculatedLCPs)).ToList();
                 i++;
             }
-                    
+
             StreamWriter file = new StreamWriter("LCPs.csv");
 
             foreach (Tuple<String, String, OrionTerm> LCP in previouslyCalculatedLCPs)
@@ -236,6 +237,205 @@ namespace LCPCalculator
             }
 
             reader.Close();
+
+            comm = new SqlCommand("SELECT                                                                                                                        "
+                                  + "       CASE                                                                                                                 "
+                                  + "          WHEN prev.PREV_STDNT_SSN IS NULL THEN r5.DE1021                                                                   "
+                                  + "          ELSE stdnt.STUDENT_SSN                                                                                            "
+                                  + "      END AS [Student_SSN]                                                                                                  "
+                                  + "       ,OrionTerm,DE2105                                                                                                    "
+                                  + "   FROM                                                                                                                     "
+                                  + "       StateSubmission.SDB.recordType5 r5                                                                                   "
+                                  + "       INNER JOIN MIS.dbo.vwTermYearXwalk xwalk ON xwalk.StateReportingTerm = r5.DE1028                                     "
+                                  + "       LEFT JOIN MIS.dbo.ST_STDNT_A_PREV_STDNT_SSN_USED_125 prev ON prev.PREV_STDNT_SSN_TY + prev.PREV_STDNT_SSN = r5.DE1021"
+                                  + "       LEFT JOIN MIS.dbo.ST_STDNT_A_125 stdnt ON stdnt.[ISN_ST_STDNT_A] = prev.[ISN_ST_STDNT_A]                             "
+                                  + "   WHERE                                                                                                                    "
+                                  + "       xwalk.OrionTerm < '" + term + "'                                                                                     "
+                                  + "       AND xwalk.StateReportingYear NOT IN ('" + term.getStateReportingYear() + "','" 
+                                  + term.getStateReportingYear().prevReportingYear() +"')" 
+                                  + "       AND r5.SubmissionType = 'E'                                                                                          "
+                                  + "       AND r5.DE2105 <> 'Z'                                                                                                 "
+                                  + "   ORDER BY                                                                                                                 "
+                                  + "       [Student_SSN]", conn);
+
+            reader = comm.ExecuteReader();
+
+            previouslyReportedLCPs.Clear();
+
+            while (reader.Read())
+            {
+                String studentID = reader["Student_SSN"].ToString().Trim();
+                String LCP = reader["DE2105"].ToString().Trim();
+
+                OrionTerm LCPterm = new OrionTerm(reader["OrionTerm"].ToString());
+
+                if (!previouslyReportedLCPs.ContainsKey(studentID))
+                {
+                    previouslyReportedLCPs.Add(studentID, new List<string>());
+                }
+
+                previouslyReportedLCPs[studentID].Add(LCP);
+            }
+
+            reader.Close();
+
+            int[] mathRanges = new int[] { 0, 314, 442, 506, 565 };
+            String[] mathLCPs = new String[] { "A", "B", "C", "D" };
+            int[] readingRanges = new int[] { 0, 368, 461, 518, 566 };
+            String[] readingLCPs = new String[] { "E", "F", "G", "H" };
+            int[] languageRanges = new int[] { 0, 390, 491, 524, 559 };
+            String[] languageLCPs = new String[] { "J", "K", "M", "N" };
+
+            comm = new SqlCommand("SELECT                                                                                              "
+                                  + "      class.STDNT_ID                                                                              "
+                                  + "      ,class.CRS_ID                                                                               "
+                                  + "      ,class.REF_NUM                                                                              "      
+                                  + "      ,MAX(log.LOG_DATE) AS REG_DT                                                                "
+                                  + "      ,test.TST_DT                                                                                "
+                                  + "      ,test.SUBTEST                                                                               "
+                                  + "      ,test.SCALE_SCORE                                                                           "
+                                  + "  FROM                                                                                            "
+                                  + "      MIS.dbo.ST_STDNT_CLS_A_235 class                                                            "
+                                  + "      INNER JOIN MIS.dbo.ST_STDNT_CLS_LOG_230 log ON log.REF_NUM = class.REF_NUM                  "
+                                  + "      INNER JOIN Adhoc.dbo.Course_Subject_Area_Xwalk xwalk ON xwalk.CRS_ID = LEFT(class.CRS_ID, 7)"
+                                  + "      INNER JOIN MIS.dbo.ST_SUBTEST_A_155 test ON test.STUDENT_ID = class.STDNT_ID                "
+                                  + "   		                                       AND test.SUBTEST = xwalk.SUBJECT                "
+                                  + "  WHERE                                                                                           "
+                                  + "      class.EFF_TRM = '" + term + "'                                                              "
+                                  + "      AND log.LOG_ACTION = 'A'                                                                    "
+                                  + "      AND test.TST_TY = 'TABE'                                                                    "
+                                  + "  GROUP BY                                                                                        "
+                                  + "      class.STDNT_ID                                                                              "
+                                  + "      ,class.CRS_ID                                                                               "
+	                              + "      ,class.REF_NUM                                                                              "
+                                  + "      ,test.TST_DT                                                                                "
+                                  + "      ,test.SUBTEST                                                                               "
+                                  + "      ,test.SCALE_SCORE                                                                           "
+                                  + "  ORDER BY                                                                                        "
+                                  + "      class.STDNT_ID                                                                              "
+                                  + "      ,class.REF_NUM", conn);
+
+            reader = comm.ExecuteReader();
+
+            String curStudent = null;
+            String curCourse = null;
+            String curRefNum = null;
+            String curSubject = null;
+            DateTime curPreTestDate = new DateTime();
+            DateTime curPostTestDate = new DateTime();
+            int preTestScore = 0;
+            int postTestScore = 0;
+
+            while (reader.Read())
+            {
+                String studentID = reader["STDNT_ID"].ToString();
+                String subject = reader["SUBTEST"].ToString();
+                String refNum = reader["REF_NUM"].ToString();
+                String courseID = reader["CRS_ID"].ToString();
+                int score = int.Parse(reader["SCALE_SCORE"].ToString());
+                DateTime registrationDate = DateTime.ParseExact(reader["REG_DT"].ToString(), "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None);
+                DateTime testDate = DateTime.ParseExact(reader["TST_DT"].ToString(), "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None);
+                                                
+                if (curStudent != null && curRefNum != refNum)
+                {
+                    if (preTestScore != 0 && postTestScore != 0)
+                    {
+                        int[] scoreRanges = null;
+                        String[] LCPs = null;
+                        int initialFunctioningLevel = 0;
+                        int finalFunctioningLevel = 0;
+
+                        if (curSubject == "RE")
+                        {
+                            scoreRanges = readingRanges;
+                            LCPs = readingLCPs;
+                        }
+                        else if (curSubject == "MA")
+                        {
+                            scoreRanges = mathRanges;
+                            LCPs = mathLCPs;
+                        }
+                        else
+                        {
+                            scoreRanges = languageRanges;
+                            LCPs = languageLCPs;
+                        }
+
+                        for (int i = 0; i < scoreRanges.Length && preTestScore >= scoreRanges[i]; i++)
+                        {
+                            initialFunctioningLevel = i;
+                        }
+
+                        for (int i = initialFunctioningLevel; i < scoreRanges.Length && postTestScore >= scoreRanges[i]; )
+                        {
+                            finalFunctioningLevel = i++;
+                        }
+
+                        for (int i = initialFunctioningLevel; i < finalFunctioningLevel; i++)
+                        {
+                            List<String> studentLCPs = previouslyReportedLCPs.ContainsKey(studentID) ? previouslyReportedLCPs[studentID] : new List<String>();
+
+                            bool previouslyCalculated = false;
+
+                            if (!studentLCPs.Contains(LCPs[i]))
+                            {
+                                Tuple<String, String, OrionTerm> LCP = new Tuple<string, string, OrionTerm>(studentID, LCPs[i], term);
+
+                                foreach (Tuple<String, String, OrionTerm> previouslyCalculatedLCP in previouslyCalculatedLCPs)
+                                {
+                                    if (previouslyCalculatedLCP.Item1 == studentID && previouslyCalculatedLCP.Item2 == LCPs[i] &&
+                                        (previouslyCalculatedLCP.Item3.getStateReportingYear() == term.getStateReportingYear()
+                                        || previouslyCalculatedLCP.Item3.getStateReportingYear() == term.getStateReportingYear().prevReportingYear()))
+                                    {
+                                        previouslyCalculated = true;
+                                        break;
+                                    }
+                                }
+
+                                foreach (Tuple<String, String, OrionTerm> previouslyCalculatedLCP in calculatedLCPs)
+                                {
+                                    if (previouslyCalculatedLCP.Item1 == studentID && previouslyCalculatedLCP.Item2 == LCPs[i] &&
+                                        (previouslyCalculatedLCP.Item3.getStateReportingYear() == term.getStateReportingYear()
+                                        || previouslyCalculatedLCP.Item3.getStateReportingYear() == term.getStateReportingYear().prevReportingYear()))
+                                    {
+                                        previouslyCalculated = true;
+                                        break;
+                                    }
+                                }
+
+                                if (!previouslyCalculated)
+                                {
+                                    Tuple<String, String, OrionTerm> newLCP = new Tuple<string, string, OrionTerm>(studentID, LCPs[i], term);
+                                    calculatedLCPs.Add(newLCP);
+                                }
+                            }
+                        }
+                    }
+
+                    curPreTestDate = new DateTime();
+                    curPostTestDate = new DateTime();
+                    preTestScore = 0;
+                    postTestScore = 0;
+                }
+
+                if (score > postTestScore && testDate > registrationDate)
+                {
+                    curPostTestDate = testDate;
+                    postTestScore = score;
+                }
+                if (testDate <= registrationDate && testDate > curPreTestDate && score != 0)
+                {
+                    curPreTestDate = testDate;
+                    preTestScore = score;
+                }
+
+                curStudent = studentID;
+                curRefNum = refNum;
+                curCourse = courseID;
+                curSubject = subject;
+            }
+
+
             conn.Close();
 
             return calculatedLCPs;

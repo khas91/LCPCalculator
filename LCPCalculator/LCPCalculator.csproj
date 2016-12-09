@@ -35,7 +35,8 @@
     <Reference Include="CommandLine">
       <HintPath>..\packages\CommandLineParser.1.9.71\lib\net45\CommandLine.dll</HintPath>
     </Reference>
-    <Reference Include="FSCJUtilityClasses">
+    <Reference Include="FSCJUtilityClasses, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\Orion\Orion\bin\Debug\FSCJUtilityClasses.dll</HintPath>
     </Reference>
     <Reference Include="System" />
