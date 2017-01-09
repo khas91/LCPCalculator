@@ -1,0 +1,1394 @@
+﻿<?xml version="1.0"?>
+<DTS:Executable xmlns:DTS="www.microsoft.com/SqlServer/Dts"
+  DTS:refId="Package"
+  DTS:CreationDate="12/20/2016 3:28:41 PM"
+  DTS:CreationName="Microsoft.Package"
+  DTS:CreatorComputerName="AEC-SPIERSON-02"
+  DTS:CreatorName="FSCJ\spierson"
+  DTS:DTSID="{B9CEAF74-B3CD-4536-B01E-C4EC937680C4}"
+  DTS:ExecutableType="Microsoft.Package"
+  DTS:LastModifiedProductVersion="13.0.2165.0"
+  DTS:LocaleID="1033"
+  DTS:ObjectName="Package"
+  DTS:PackageType="5"
+  DTS:VersionBuild="31"
+  DTS:VersionGUID="{9AC6FBF1-15AD-45EC-B8DA-0B01A1724747}">
+  <DTS:Property
+    DTS:Name="PackageFormatVersion">8</DTS:Property>
+  <DTS:ConnectionManagers>
+    <DTS:ConnectionManager
+      DTS:refId="Package.ConnectionManagers[CalcLCPs]"
+      DTS:CreationName="FLATFILE"
+      DTS:DTSID="{1A72A587-5C11-4DA7-8EF8-921F2C2E6B22}"
+      DTS:ObjectName="CalcLCPs">
+      <DTS:ObjectData>
+        <DTS:ConnectionManager
+          DTS:Format="Delimited"
+          DTS:LocaleID="1033"
+          DTS:HeaderRowDelimiter="_x000D__x000A_"
+          DTS:ColumnNamesInFirstDataRow="True"
+          DTS:RowDelimiter=""
+          DTS:TextQualifier="_x003C_none_x003E_"
+          DTS:CodePage="1252"
+          DTS:ConnectionString="Z:\Stuart\ConsoleApplications\LCPCalculator\LCPs.csv">
+          <DTS:FlatFileColumns>
+            <DTS:FlatFileColumn
+              DTS:ColumnType="Delimited"
+              DTS:ColumnDelimiter="_x002C_"
+              DTS:MaximumWidth="10"
+              DTS:DataType="129"
+              DTS:TextQualified="True"
+              DTS:ObjectName="StudentID"
+              DTS:DTSID="{D15EA1E8-D649-4893-9A6A-750F557BAAD2}"
+              DTS:CreationName="" />
+            <DTS:FlatFileColumn
+              DTS:ColumnType="Delimited"
+              DTS:ColumnDelimiter="_x002C_"
+              DTS:MaximumWidth="50"
+              DTS:DataType="129"
+              DTS:TextQualified="True"
+              DTS:ObjectName="Type"
+              DTS:DTSID="{FF77AFB3-B13B-4601-B56C-B78D0E7E8FE7}"
+              DTS:CreationName="" />
+            <DTS:FlatFileColumn
+              DTS:ColumnType="Delimited"
+              DTS:ColumnDelimiter="_x002C_"
+              DTS:MaximumWidth="2"
+              DTS:DataType="129"
+              DTS:TextQualified="True"
+              DTS:ObjectName="COMP_POINT_ID"
+              DTS:DTSID="{86FC9DFA-84AD-4B04-BBE1-1B7487EAE26E}"
+              DTS:CreationName="" />
+            <DTS:FlatFileColumn
+              DTS:ColumnType="Delimited"
+              DTS:ColumnDelimiter="_x000D__x000A_"
+              DTS:MaximumWidth="5"
+              DTS:DataType="129"
+              DTS:TextQualified="True"
+              DTS:ObjectName="Term"
+              DTS:DTSID="{3DF2624E-DEB7-4146-9B08-E98670D06F11}"
+              DTS:CreationName="" />
+          </DTS:FlatFileColumns>
+        </DTS:ConnectionManager>
+      </DTS:ObjectData>
+    </DTS:ConnectionManager>
+    <DTS:ConnectionManager
+      DTS:refId="Package.ConnectionManagers[vulcan.MIS]"
+      DTS:CreationName="OLEDB"
+      DTS:DTSID="{17544C4E-6A4F-4A41-B083-08FE7C8012CD}"
+      DTS:ObjectName="vulcan.MIS">
+      <DTS:ObjectData>
+        <DTS:ConnectionManager
+          DTS:ConnectionString="Data Source=vulcan;Initial Catalog=MIS;Provider=SQLNCLI11.1;Integrated Security=SSPI;Auto Translate=False;" />
+      </DTS:ObjectData>
+    </DTS:ConnectionManager>
+    <DTS:ConnectionManager
+      DTS:refId="Package.ConnectionManagers[vulcan.State_Report_Data]"
+      DTS:CreationName="OLEDB"
+      DTS:DTSID="{CD1D4A77-6BD1-4AFD-8A21-D30CE6049634}"
+      DTS:ObjectName="vulcan.State_Report_Data">
+      <DTS:ObjectData>
+        <DTS:ConnectionManager
+          DTS:ConnectionString="Data Source=vulcan;Initial Catalog=State_Report_Data;Provider=SQLNCLI11.1;Integrated Security=SSPI;Auto Translate=False;" />
+      </DTS:ObjectData>
+    </DTS:ConnectionManager>
+  </DTS:ConnectionManagers>
+  <DTS:Variables>
+    <DTS:Variable
+      DTS:CreationName=""
+      DTS:DTSID="{EC70EC42-5FCB-459A-8B10-843B54346C02}"
+      DTS:IncludeInDebugDump="2345"
+      DTS:Namespace="User"
+      DTS:ObjectName="term">
+      <DTS:VariableValue
+        DTS:DataType="8">20171</DTS:VariableValue>
+    </DTS:Variable>
+  </DTS:Variables>
+  <DTS:Executables>
+    <DTS:Executable
+      DTS:refId="Package\Calculate LCPs"
+      DTS:CreationName="Microsoft.ExecuteProcess"
+      DTS:Description="Execute Process Task"
+      DTS:DTSID="{4A404941-167C-4BF7-B67B-5349F2C3FA66}"
+      DTS:ExecutableType="Microsoft.ExecuteProcess"
+      DTS:LocaleID="-1"
+      DTS:ObjectName="Calculate LCPs"
+      DTS:TaskContact="Execute Process Task;Microsoft Corporation; SQL Server 2016; © 2015 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1"
+      DTS:ThreadHint="0">
+      <DTS:Variables />
+      <DTS:PropertyExpression
+        DTS:Name="Arguments">"-m " + @[User::term] + " -x " +  @[User::term]</DTS:PropertyExpression>
+      <DTS:ObjectData>
+        <ExecuteProcessData
+          Executable="Z:\Stuart\ConsoleApplications\LCPCalculator\LCPCalculator\bin\Debug\LCPCalculator.exe"
+          Arguments="-m 20171 -x 20171"
+          WorkingDirectory="Z:\Stuart\ConsoleApplications\LCPCalculator\LCPCalculator\bin\Debug" />
+      </DTS:ObjectData>
+    </DTS:Executable>
+    <DTS:Executable
+      DTS:refId="Package\Import LCPs to database"
+      DTS:CreationName="Microsoft.Pipeline"
+      DTS:Description="Data Flow Task"
+      DTS:DTSID="{666571B7-6EAB-4FF8-AA60-55612A83F101}"
+      DTS:ExecutableType="Microsoft.Pipeline"
+      DTS:LocaleID="-1"
+      DTS:ObjectName="Import LCPs to database"
+      DTS:TaskContact="Performs high-performance data extraction, transformation and loading;Microsoft Corporation; Microsoft SQL Server; (C) Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1">
+      <DTS:Variables />
+      <DTS:ObjectData>
+        <pipeline
+          version="1">
+          <components>
+            <component
+              refId="Package\Import LCPs to database\Data Conversion"
+              componentClassID="Microsoft.DataConvert"
+              contactInfo="Data Conversion;Microsoft Corporation; Microsoft SQL Server; (C) Microsoft Corporation; All Rights Reserved; http://www.microsoft.com/sql/support;0"
+              description="Data Conversion"
+              name="Data Conversion"
+              usesDispositions="true">
+              <inputs>
+                <input
+                  refId="Package\Import LCPs to database\Data Conversion.Inputs[Data Conversion Input]"
+                  name="Data Conversion Input">
+                  <inputColumns>
+                    <inputColumn
+                      refId="Package\Import LCPs to database\Data Conversion.Inputs[Data Conversion Input].Columns[TRM_YR_RPTD]"
+                      cachedDataType="wstr"
+                      cachedLength="50"
+                      cachedName="TRM_YR_RPTD"
+                      lineageId="Package\Import LCPs to database\Derived Column.Outputs[Derived Column Output].Columns[TRM_YR_RPTD]" />
+                    <inputColumn
+                      refId="Package\Import LCPs to database\Data Conversion.Inputs[Data Conversion Input].Columns[PGM_CD]"
+                      cachedDataType="wstr"
+                      cachedLength="4"
+                      cachedName="PGM_CD"
+                      lineageId="Package\Import LCPs to database\Derived Column.Outputs[Derived Column Output].Columns[PGM_CD]" />
+                    <inputColumn
+                      refId="Package\Import LCPs to database\Data Conversion.Inputs[Data Conversion Input].Columns[COMP_POINT_TY]"
+                      cachedDataType="wstr"
+                      cachedLength="2"
+                      cachedName="COMP_POINT_TY"
+                      lineageId="Package\Import LCPs to database\Derived Column.Outputs[Derived Column Output].Columns[COMP_POINT_TY]" />
+                    <inputColumn
+                      refId="Package\Import LCPs to database\Data Conversion.Inputs[Data Conversion Input].Columns[CIP_CD]"
+                      cachedDataType="wstr"
+                      cachedLength="10"
+                      cachedName="CIP_CD"
+                      lineageId="Package\Import LCPs to database\Derived Column.Outputs[Derived Column Output].Columns[CIP_CD]" />
+                    <inputColumn
+                      refId="Package\Import LCPs to database\Data Conversion.Inputs[Data Conversion Input].Columns[APPRENTICE_YN]"
+                      cachedDataType="wstr"
+                      cachedLength="1"
+                      cachedName="APPRENTICE_YN"
+                      lineageId="Package\Import LCPs to database\Derived Column.Outputs[Derived Column Output].Columns[APPRENTICE_YN]" />
+                  </inputColumns>
+                  <externalMetadataColumns />
+                </input>
+              </inputs>
+              <outputs>
+                <output
+                  refId="Package\Import LCPs to database\Data Conversion.Outputs[Data Conversion Output]"
+                  exclusionGroup="1"
+                  name="Data Conversion Output"
+                  synchronousInputId="Package\Import LCPs to database\Data Conversion.Inputs[Data Conversion Input]">
+                  <outputColumns>
+                    <outputColumn
+                      refId="Package\Import LCPs to database\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of TRM_YR_RPTD]"
+                      codePage="1252"
+                      dataType="str"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      length="5"
+                      lineageId="Package\Import LCPs to database\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of TRM_YR_RPTD]"
+                      name="Copy of TRM_YR_RPTD"
+                      truncationRowDisposition="FailComponent">
+                      <properties>
+                        <property
+                          containsID="true"
+                          dataType="System.Int32"
+                          description="Specifies the input column used as the source of data for the conversion."
+                          name="SourceInputColumnLineageID">#{Package\Import LCPs to database\Derived Column.Outputs[Derived Column Output].Columns[TRM_YR_RPTD]}</property>
+                        <property
+                          dataType="System.Boolean"
+                          description="Indicates whether the column uses the faster, locale-neutral parsing routines."
+                          name="FastParse">false</property>
+                      </properties>
+                    </outputColumn>
+                    <outputColumn
+                      refId="Package\Import LCPs to database\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of PGM_CD]"
+                      codePage="1252"
+                      dataType="str"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      length="4"
+                      lineageId="Package\Import LCPs to database\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of PGM_CD]"
+                      name="Copy of PGM_CD"
+                      truncationRowDisposition="FailComponent">
+                      <properties>
+                        <property
+                          containsID="true"
+                          dataType="System.Int32"
+                          description="Specifies the input column used as the source of data for the conversion."
+                          name="SourceInputColumnLineageID">#{Package\Import LCPs to database\Derived Column.Outputs[Derived Column Output].Columns[PGM_CD]}</property>
+                        <property
+                          dataType="System.Boolean"
+                          description="Indicates whether the column uses the faster, locale-neutral parsing routines."
+                          name="FastParse">false</property>
+                      </properties>
+                    </outputColumn>
+                    <outputColumn
+                      refId="Package\Import LCPs to database\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of COMP_POINT_TY]"
+                      codePage="1252"
+                      dataType="str"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      length="2"
+                      lineageId="Package\Import LCPs to database\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of COMP_POINT_TY]"
+                      name="Copy of COMP_POINT_TY"
+                      truncationRowDisposition="FailComponent">
+                      <properties>
+                        <property
+                          containsID="true"
+                          dataType="System.Int32"
+                          description="Specifies the input column used as the source of data for the conversion."
+                          name="SourceInputColumnLineageID">#{Package\Import LCPs to database\Derived Column.Outputs[Derived Column Output].Columns[COMP_POINT_TY]}</property>
+                        <property
+                          dataType="System.Boolean"
+                          description="Indicates whether the column uses the faster, locale-neutral parsing routines."
+                          name="FastParse">false</property>
+                      </properties>
+                    </outputColumn>
+                    <outputColumn
+                      refId="Package\Import LCPs to database\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of CIP_CD]"
+                      codePage="1252"
+                      dataType="str"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      length="10"
+                      lineageId="Package\Import LCPs to database\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of CIP_CD]"
+                      name="Copy of CIP_CD"
+                      truncationRowDisposition="FailComponent">
+                      <properties>
+                        <property
+                          containsID="true"
+                          dataType="System.Int32"
+                          description="Specifies the input column used as the source of data for the conversion."
+                          name="SourceInputColumnLineageID">#{Package\Import LCPs to database\Derived Column.Outputs[Derived Column Output].Columns[CIP_CD]}</property>
+                        <property
+                          dataType="System.Boolean"
+                          description="Indicates whether the column uses the faster, locale-neutral parsing routines."
+                          name="FastParse">false</property>
+                      </properties>
+                    </outputColumn>
+                    <outputColumn
+                      refId="Package\Import LCPs to database\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of APPRENTICE_YN]"
+                      codePage="1252"
+                      dataType="str"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      length="1"
+                      lineageId="Package\Import LCPs to database\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of APPRENTICE_YN]"
+                      name="Copy of APPRENTICE_YN"
+                      truncationRowDisposition="FailComponent">
+                      <properties>
+                        <property
+                          containsID="true"
+                          dataType="System.Int32"
+                          description="Specifies the input column used as the source of data for the conversion."
+                          name="SourceInputColumnLineageID">#{Package\Import LCPs to database\Derived Column.Outputs[Derived Column Output].Columns[APPRENTICE_YN]}</property>
+                        <property
+                          dataType="System.Boolean"
+                          description="Indicates whether the column uses the faster, locale-neutral parsing routines."
+                          name="FastParse">false</property>
+                      </properties>
+                    </outputColumn>
+                  </outputColumns>
+                  <externalMetadataColumns />
+                </output>
+                <output
+                  refId="Package\Import LCPs to database\Data Conversion.Outputs[Data Conversion Error Output]"
+                  exclusionGroup="1"
+                  isErrorOut="true"
+                  name="Data Conversion Error Output"
+                  synchronousInputId="Package\Import LCPs to database\Data Conversion.Inputs[Data Conversion Input]">
+                  <outputColumns>
+                    <outputColumn
+                      refId="Package\Import LCPs to database\Data Conversion.Outputs[Data Conversion Error Output].Columns[ErrorCode]"
+                      dataType="i4"
+                      lineageId="Package\Import LCPs to database\Data Conversion.Outputs[Data Conversion Error Output].Columns[ErrorCode]"
+                      name="ErrorCode"
+                      specialFlags="1" />
+                    <outputColumn
+                      refId="Package\Import LCPs to database\Data Conversion.Outputs[Data Conversion Error Output].Columns[ErrorColumn]"
+                      dataType="i4"
+                      lineageId="Package\Import LCPs to database\Data Conversion.Outputs[Data Conversion Error Output].Columns[ErrorColumn]"
+                      name="ErrorColumn"
+                      specialFlags="2" />
+                  </outputColumns>
+                  <externalMetadataColumns />
+                </output>
+              </outputs>
+            </component>
+            <component
+              refId="Package\Import LCPs to database\Derived Column"
+              componentClassID="Microsoft.DerivedColumn"
+              contactInfo="Derived Column;Microsoft Corporation; Microsoft SQL Server; (C) Microsoft Corporation; All Rights Reserved; http://www.microsoft.com/sql/support;0"
+              description="Creates new column values by applying expressions to transformation input columns. Create new columns or overwrite existing ones. For example, concatenate the values from the 'first name' and 'last name' column to make a 'full name' column."
+              name="Derived Column"
+              usesDispositions="true">
+              <inputs>
+                <input
+                  refId="Package\Import LCPs to database\Derived Column.Inputs[Derived Column Input]"
+                  description="Input to the Derived Column Transformation"
+                  name="Derived Column Input">
+                  <inputColumns>
+                    <inputColumn
+                      refId="Package\Import LCPs to database\Derived Column.Inputs[Derived Column Input].Columns[Type]"
+                      cachedCodepage="1252"
+                      cachedDataType="str"
+                      cachedLength="50"
+                      cachedName="Type"
+                      lineageId="Package\Import LCPs to database\Flat File Source.Outputs[Flat File Source Output].Columns[Type]" />
+                    <inputColumn
+                      refId="Package\Import LCPs to database\Derived Column.Inputs[Derived Column Input].Columns[Term]"
+                      cachedCodepage="1252"
+                      cachedDataType="str"
+                      cachedLength="5"
+                      cachedName="Term"
+                      lineageId="Package\Import LCPs to database\Flat File Source.Outputs[Flat File Source Output].Columns[Term]" />
+                    <inputColumn
+                      refId="Package\Import LCPs to database\Derived Column.Inputs[Derived Column Input].Columns[StudentID]"
+                      cachedCodepage="1252"
+                      cachedDataType="str"
+                      cachedLength="10"
+                      cachedName="StudentID"
+                      errorOrTruncationOperation="Computation"
+                      errorRowDisposition="FailComponent"
+                      lineageId="Package\Import LCPs to database\Flat File Source.Outputs[Flat File Source Output].Columns[StudentID]"
+                      truncationRowDisposition="FailComponent"
+                      usageType="readWrite">
+                      <properties>
+                        <property
+                          containsID="true"
+                          dataType="System.String"
+                          description="Derived Column Expression"
+                          name="Expression">(DT_STR,9,1252)[LEFT](#{Package\Import LCPs to database\Flat File Source.Outputs[Flat File Source Output].Columns[StudentID]},1) == "D" ? [RIGHT](#{Package\Import LCPs to database\Flat File Source.Outputs[Flat File Source Output].Columns[StudentID]},9) : #{Package\Import LCPs to database\Flat File Source.Outputs[Flat File Source Output].Columns[StudentID]}</property>
+                        <property
+                          containsID="true"
+                          dataType="System.String"
+                          description="Derived Column Friendly Expression"
+                          expressionType="Notify"
+                          name="FriendlyExpression">(DT_STR,9,1252)LEFT(StudentID,1) == "D" ? RIGHT(StudentID,9) : StudentID</property>
+                      </properties>
+                    </inputColumn>
+                  </inputColumns>
+                  <externalMetadataColumns />
+                </input>
+              </inputs>
+              <outputs>
+                <output
+                  refId="Package\Import LCPs to database\Derived Column.Outputs[Derived Column Output]"
+                  description="Default Output of the Derived Column Transformation"
+                  exclusionGroup="1"
+                  name="Derived Column Output"
+                  synchronousInputId="Package\Import LCPs to database\Derived Column.Inputs[Derived Column Input]">
+                  <outputColumns>
+                    <outputColumn
+                      refId="Package\Import LCPs to database\Derived Column.Outputs[Derived Column Output].Columns[APPRENTICE_YN]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Computation"
+                      errorRowDisposition="FailComponent"
+                      length="1"
+                      lineageId="Package\Import LCPs to database\Derived Column.Outputs[Derived Column Output].Columns[APPRENTICE_YN]"
+                      name="APPRENTICE_YN"
+                      truncationRowDisposition="FailComponent">
+                      <properties>
+                        <property
+                          containsID="true"
+                          dataType="System.String"
+                          description="Derived Column Expression"
+                          name="Expression">"Z"</property>
+                        <property
+                          containsID="true"
+                          dataType="System.String"
+                          description="Derived Column Friendly Expression"
+                          expressionType="Notify"
+                          name="FriendlyExpression">"Z"</property>
+                      </properties>
+                    </outputColumn>
+                    <outputColumn
+                      refId="Package\Import LCPs to database\Derived Column.Outputs[Derived Column Output].Columns[CIP_CD]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Computation"
+                      errorRowDisposition="FailComponent"
+                      length="10"
+                      lineageId="Package\Import LCPs to database\Derived Column.Outputs[Derived Column Output].Columns[CIP_CD]"
+                      name="CIP_CD"
+                      truncationRowDisposition="FailComponent">
+                      <properties>
+                        <property
+                          containsID="true"
+                          dataType="System.String"
+                          description="Derived Column Expression"
+                          name="Expression">(#{Package\Import LCPs to database\Flat File Source.Outputs[Flat File Source Output].Columns[Type]} == "AHS" ? "1532010202" : (#{Package\Import LCPs to database\Flat File Source.Outputs[Flat File Source Output].Columns[Type]} == "ABE" ? "1532010200" : "1532010301"))</property>
+                        <property
+                          containsID="true"
+                          dataType="System.String"
+                          description="Derived Column Friendly Expression"
+                          expressionType="Notify"
+                          name="FriendlyExpression">(Type == "AHS" ? "1532010202" : (Type == "ABE" ? "1532010200" : "1532010301"))</property>
+                      </properties>
+                    </outputColumn>
+                    <outputColumn
+                      refId="Package\Import LCPs to database\Derived Column.Outputs[Derived Column Output].Columns[COMP_POINT_TY]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Computation"
+                      errorRowDisposition="FailComponent"
+                      length="2"
+                      lineageId="Package\Import LCPs to database\Derived Column.Outputs[Derived Column Output].Columns[COMP_POINT_TY]"
+                      name="COMP_POINT_TY"
+                      truncationRowDisposition="FailComponent">
+                      <properties>
+                        <property
+                          containsID="true"
+                          dataType="System.String"
+                          description="Derived Column Expression"
+                          name="Expression">(#{Package\Import LCPs to database\Flat File Source.Outputs[Flat File Source Output].Columns[Type]} == "AHS" ? "LS" : (#{Package\Import LCPs to database\Flat File Source.Outputs[Flat File Source Output].Columns[Type]} == "ABE" ? "LA" : "LE"))</property>
+                        <property
+                          containsID="true"
+                          dataType="System.String"
+                          description="Derived Column Friendly Expression"
+                          expressionType="Notify"
+                          name="FriendlyExpression">(Type == "AHS" ? "LS" : (Type == "ABE" ? "LA" : "LE"))</property>
+                      </properties>
+                    </outputColumn>
+                    <outputColumn
+                      refId="Package\Import LCPs to database\Derived Column.Outputs[Derived Column Output].Columns[PGM_CD]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Computation"
+                      errorRowDisposition="FailComponent"
+                      length="4"
+                      lineageId="Package\Import LCPs to database\Derived Column.Outputs[Derived Column Output].Columns[PGM_CD]"
+                      name="PGM_CD"
+                      truncationRowDisposition="FailComponent">
+                      <properties>
+                        <property
+                          containsID="true"
+                          dataType="System.String"
+                          description="Derived Column Expression"
+                          name="Expression">(#{Package\Import LCPs to database\Flat File Source.Outputs[Flat File Source Output].Columns[Type]} == "AHS" ? "7517" : (#{Package\Import LCPs to database\Flat File Source.Outputs[Flat File Source Output].Columns[Type]} == "ABE" ? "8555" : "8500"))</property>
+                        <property
+                          containsID="true"
+                          dataType="System.String"
+                          description="Derived Column Friendly Expression"
+                          expressionType="Notify"
+                          name="FriendlyExpression">(Type == "AHS" ? "7517" : (Type == "ABE" ? "8555" : "8500"))</property>
+                      </properties>
+                    </outputColumn>
+                    <outputColumn
+                      refId="Package\Import LCPs to database\Derived Column.Outputs[Derived Column Output].Columns[TRM_YR_RPTD]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Computation"
+                      errorRowDisposition="FailComponent"
+                      length="50"
+                      lineageId="Package\Import LCPs to database\Derived Column.Outputs[Derived Column Output].Columns[TRM_YR_RPTD]"
+                      name="TRM_YR_RPTD"
+                      truncationRowDisposition="FailComponent">
+                      <properties>
+                        <property
+                          containsID="true"
+                          dataType="System.String"
+                          description="Derived Column Expression"
+                          name="Expression">#{Package\Import LCPs to database\Flat File Source.Outputs[Flat File Source Output].Columns[Term]}</property>
+                        <property
+                          containsID="true"
+                          dataType="System.String"
+                          description="Derived Column Friendly Expression"
+                          expressionType="Notify"
+                          name="FriendlyExpression">Term</property>
+                      </properties>
+                    </outputColumn>
+                  </outputColumns>
+                  <externalMetadataColumns />
+                </output>
+                <output
+                  refId="Package\Import LCPs to database\Derived Column.Outputs[Derived Column Error Output]"
+                  description="Error Output of the Derived Column Transformation"
+                  exclusionGroup="1"
+                  isErrorOut="true"
+                  name="Derived Column Error Output"
+                  synchronousInputId="Package\Import LCPs to database\Derived Column.Inputs[Derived Column Input]">
+                  <outputColumns>
+                    <outputColumn
+                      refId="Package\Import LCPs to database\Derived Column.Outputs[Derived Column Error Output].Columns[ErrorCode]"
+                      dataType="i4"
+                      lineageId="Package\Import LCPs to database\Derived Column.Outputs[Derived Column Error Output].Columns[ErrorCode]"
+                      name="ErrorCode"
+                      specialFlags="1" />
+                    <outputColumn
+                      refId="Package\Import LCPs to database\Derived Column.Outputs[Derived Column Error Output].Columns[ErrorColumn]"
+                      dataType="i4"
+                      lineageId="Package\Import LCPs to database\Derived Column.Outputs[Derived Column Error Output].Columns[ErrorColumn]"
+                      name="ErrorColumn"
+                      specialFlags="2" />
+                  </outputColumns>
+                  <externalMetadataColumns />
+                </output>
+              </outputs>
+            </component>
+            <component
+              refId="Package\Import LCPs to database\Flat File Source"
+              componentClassID="Microsoft.FlatFileSource"
+              contactInfo="Flat File Source;Microsoft Corporation; Microsoft SQL Server; (C) Microsoft Corporation; All Rights Reserved; http://www.microsoft.com/sql/support;1"
+              description="Flat File Source"
+              localeId="1033"
+              name="Flat File Source"
+              usesDispositions="true"
+              version="1">
+              <properties>
+                <property
+                  dataType="System.Boolean"
+                  description="Specifies whether zero-length columns are treated as null."
+                  name="RetainNulls">false</property>
+                <property
+                  dataType="System.String"
+                  description="Specifies the name of an output column containing the file name. If no name is specified, no output column containing the file name will be generated."
+                  name="FileNameColumnName"></property>
+              </properties>
+              <connections>
+                <connection
+                  refId="Package\Import LCPs to database\Flat File Source.Connections[FlatFileConnection]"
+                  connectionManagerID="Package.ConnectionManagers[CalcLCPs]"
+                  connectionManagerRefId="Package.ConnectionManagers[CalcLCPs]"
+                  name="FlatFileConnection" />
+              </connections>
+              <outputs>
+                <output
+                  refId="Package\Import LCPs to database\Flat File Source.Outputs[Flat File Source Output]"
+                  name="Flat File Source Output">
+                  <outputColumns>
+                    <outputColumn
+                      refId="Package\Import LCPs to database\Flat File Source.Outputs[Flat File Source Output].Columns[StudentID]"
+                      codePage="1252"
+                      dataType="str"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Import LCPs to database\Flat File Source.Outputs[Flat File Source Output].ExternalColumns[StudentID]"
+                      length="10"
+                      lineageId="Package\Import LCPs to database\Flat File Source.Outputs[Flat File Source Output].Columns[StudentID]"
+                      name="StudentID"
+                      truncationRowDisposition="FailComponent">
+                      <properties>
+                        <property
+                          dataType="System.Boolean"
+                          description="Indicates whether the column uses the faster, locale-neutral parsing routines."
+                          name="FastParse">false</property>
+                        <property
+                          dataType="System.Boolean"
+                          description="Indicates whether the data is in binary format."
+                          name="UseBinaryFormat">false</property>
+                      </properties>
+                    </outputColumn>
+                    <outputColumn
+                      refId="Package\Import LCPs to database\Flat File Source.Outputs[Flat File Source Output].Columns[Type]"
+                      codePage="1252"
+                      dataType="str"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Import LCPs to database\Flat File Source.Outputs[Flat File Source Output].ExternalColumns[Type]"
+                      length="50"
+                      lineageId="Package\Import LCPs to database\Flat File Source.Outputs[Flat File Source Output].Columns[Type]"
+                      name="Type"
+                      truncationRowDisposition="FailComponent">
+                      <properties>
+                        <property
+                          dataType="System.Boolean"
+                          description="Indicates whether the column uses the faster, locale-neutral parsing routines."
+                          name="FastParse">false</property>
+                        <property
+                          dataType="System.Boolean"
+                          description="Indicates whether the data is in binary format."
+                          name="UseBinaryFormat">false</property>
+                      </properties>
+                    </outputColumn>
+                    <outputColumn
+                      refId="Package\Import LCPs to database\Flat File Source.Outputs[Flat File Source Output].Columns[COMP_POINT_ID]"
+                      codePage="1252"
+                      dataType="str"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Import LCPs to database\Flat File Source.Outputs[Flat File Source Output].ExternalColumns[COMP_POINT_ID]"
+                      length="2"
+                      lineageId="Package\Import LCPs to database\Flat File Source.Outputs[Flat File Source Output].Columns[COMP_POINT_ID]"
+                      name="COMP_POINT_ID"
+                      truncationRowDisposition="FailComponent">
+                      <properties>
+                        <property
+                          dataType="System.Boolean"
+                          description="Indicates whether the column uses the faster, locale-neutral parsing routines."
+                          name="FastParse">false</property>
+                        <property
+                          dataType="System.Boolean"
+                          description="Indicates whether the data is in binary format."
+                          name="UseBinaryFormat">false</property>
+                      </properties>
+                    </outputColumn>
+                    <outputColumn
+                      refId="Package\Import LCPs to database\Flat File Source.Outputs[Flat File Source Output].Columns[Term]"
+                      codePage="1252"
+                      dataType="str"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Import LCPs to database\Flat File Source.Outputs[Flat File Source Output].ExternalColumns[Term]"
+                      length="5"
+                      lineageId="Package\Import LCPs to database\Flat File Source.Outputs[Flat File Source Output].Columns[Term]"
+                      name="Term"
+                      truncationRowDisposition="FailComponent">
+                      <properties>
+                        <property
+                          dataType="System.Boolean"
+                          description="Indicates whether the column uses the faster, locale-neutral parsing routines."
+                          name="FastParse">false</property>
+                        <property
+                          dataType="System.Boolean"
+                          description="Indicates whether the data is in binary format."
+                          name="UseBinaryFormat">false</property>
+                      </properties>
+                    </outputColumn>
+                  </outputColumns>
+                  <externalMetadataColumns
+                    isUsed="True">
+                    <externalMetadataColumn
+                      refId="Package\Import LCPs to database\Flat File Source.Outputs[Flat File Source Output].ExternalColumns[StudentID]"
+                      codePage="1252"
+                      dataType="str"
+                      length="10"
+                      name="StudentID" />
+                    <externalMetadataColumn
+                      refId="Package\Import LCPs to database\Flat File Source.Outputs[Flat File Source Output].ExternalColumns[Type]"
+                      codePage="1252"
+                      dataType="str"
+                      length="50"
+                      name="Type" />
+                    <externalMetadataColumn
+                      refId="Package\Import LCPs to database\Flat File Source.Outputs[Flat File Source Output].ExternalColumns[COMP_POINT_ID]"
+                      codePage="1252"
+                      dataType="str"
+                      length="2"
+                      name="COMP_POINT_ID" />
+                    <externalMetadataColumn
+                      refId="Package\Import LCPs to database\Flat File Source.Outputs[Flat File Source Output].ExternalColumns[Term]"
+                      codePage="1252"
+                      dataType="str"
+                      length="5"
+                      name="Term" />
+                  </externalMetadataColumns>
+                </output>
+                <output
+                  refId="Package\Import LCPs to database\Flat File Source.Outputs[Flat File Source Error Output]"
+                  isErrorOut="true"
+                  name="Flat File Source Error Output">
+                  <outputColumns>
+                    <outputColumn
+                      refId="Package\Import LCPs to database\Flat File Source.Outputs[Flat File Source Error Output].Columns[Flat File Source Error Output Column]"
+                      codePage="1252"
+                      dataType="text"
+                      description="Flat File Source Error Output Column"
+                      lineageId="Package\Import LCPs to database\Flat File Source.Outputs[Flat File Source Error Output].Columns[Flat File Source Error Output Column]"
+                      name="Flat File Source Error Output Column" />
+                    <outputColumn
+                      refId="Package\Import LCPs to database\Flat File Source.Outputs[Flat File Source Error Output].Columns[ErrorCode]"
+                      dataType="i4"
+                      lineageId="Package\Import LCPs to database\Flat File Source.Outputs[Flat File Source Error Output].Columns[ErrorCode]"
+                      name="ErrorCode"
+                      specialFlags="1" />
+                    <outputColumn
+                      refId="Package\Import LCPs to database\Flat File Source.Outputs[Flat File Source Error Output].Columns[ErrorColumn]"
+                      dataType="i4"
+                      lineageId="Package\Import LCPs to database\Flat File Source.Outputs[Flat File Source Error Output].Columns[ErrorColumn]"
+                      name="ErrorColumn"
+                      specialFlags="2" />
+                  </outputColumns>
+                  <externalMetadataColumns />
+                </output>
+              </outputs>
+            </component>
+            <component
+              refId="Package\Import LCPs to database\OLE DB Destination"
+              componentClassID="Microsoft.OLEDBDestination"
+              contactInfo="OLE DB Destination;Microsoft Corporation; Microsoft SQL Server; (C) Microsoft Corporation; All Rights Reserved; http://www.microsoft.com/sql/support;4"
+              description="OLE DB Destination"
+              name="OLE DB Destination"
+              usesDispositions="true"
+              version="4">
+              <properties>
+                <property
+                  dataType="System.Int32"
+                  description="The number of seconds before a command times out.  A value of 0 indicates an infinite time-out."
+                  name="CommandTimeout">0</property>
+                <property
+                  dataType="System.String"
+                  description="Specifies the name of the database object used to open a rowset."
+                  name="OpenRowset">[dbo].[LCP_BY_CLASS_RECALC]</property>
+                <property
+                  dataType="System.String"
+                  description="Specifies the variable that contains the name of the database object used to open a rowset."
+                  name="OpenRowsetVariable"></property>
+                <property
+                  dataType="System.String"
+                  description="The SQL command to be executed."
+                  name="SqlCommand"
+                  UITypeEditor="Microsoft.DataTransformationServices.Controls.ModalMultilineStringEditor"></property>
+                <property
+                  dataType="System.Int32"
+                  description="Specifies the column code page to use when code page information is unavailable from the data source."
+                  name="DefaultCodePage">1252</property>
+                <property
+                  dataType="System.Boolean"
+                  description="Forces the use of the DefaultCodePage property value when describing character data."
+                  name="AlwaysUseDefaultCodePage">false</property>
+                <property
+                  dataType="System.Int32"
+                  description="Specifies the mode used to access the database."
+                  name="AccessMode"
+                  typeConverter="AccessMode">3</property>
+                <property
+                  dataType="System.Boolean"
+                  description="Indicates whether the values supplied for identity columns will be copied to the destination. If false, values for identity columns will be auto-generated at the destination. Applies only if fast load is turned on."
+                  name="FastLoadKeepIdentity">false</property>
+                <property
+                  dataType="System.Boolean"
+                  description="Indicates whether the columns containing null will have null inserted in the destination. If false, columns containing null will have their default values inserted at the destination. Applies only if fast load is turned on."
+                  name="FastLoadKeepNulls">false</property>
+                <property
+                  dataType="System.String"
+                  description="Specifies options to be used with fast load.  Applies only if fast load is turned on."
+                  name="FastLoadOptions">TABLOCK,CHECK_CONSTRAINTS</property>
+                <property
+                  dataType="System.Int32"
+                  description="Specifies when commits are issued during data insertion.  A value of 0 specifies that one commit will be issued at the end of data insertion.  Applies only if fast load is turned on."
+                  name="FastLoadMaxInsertCommitSize">2147483647</property>
+              </properties>
+              <connections>
+                <connection
+                  refId="Package\Import LCPs to database\OLE DB Destination.Connections[OleDbConnection]"
+                  connectionManagerID="Package.ConnectionManagers[vulcan.State_Report_Data]"
+                  connectionManagerRefId="Package.ConnectionManagers[vulcan.State_Report_Data]"
+                  description="The OLE DB runtime connection used to access the database."
+                  name="OleDbConnection" />
+              </connections>
+              <inputs>
+                <input
+                  refId="Package\Import LCPs to database\OLE DB Destination.Inputs[OLE DB Destination Input]"
+                  errorOrTruncationOperation="Insert"
+                  errorRowDisposition="FailComponent"
+                  hasSideEffects="true"
+                  name="OLE DB Destination Input">
+                  <inputColumns>
+                    <inputColumn
+                      refId="Package\Import LCPs to database\OLE DB Destination.Inputs[OLE DB Destination Input].Columns[COMP_POINT_ID]"
+                      cachedCodepage="1252"
+                      cachedDataType="str"
+                      cachedLength="2"
+                      cachedName="COMP_POINT_ID"
+                      externalMetadataColumnId="Package\Import LCPs to database\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[COMP_POINT_ID]"
+                      lineageId="Package\Import LCPs to database\Flat File Source.Outputs[Flat File Source Output].Columns[COMP_POINT_ID]" />
+                    <inputColumn
+                      refId="Package\Import LCPs to database\OLE DB Destination.Inputs[OLE DB Destination Input].Columns[StudentID]"
+                      cachedCodepage="1252"
+                      cachedDataType="str"
+                      cachedLength="10"
+                      cachedName="StudentID"
+                      externalMetadataColumnId="Package\Import LCPs to database\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[STDNT_ID]"
+                      lineageId="Package\Import LCPs to database\Flat File Source.Outputs[Flat File Source Output].Columns[StudentID]" />
+                    <inputColumn
+                      refId="Package\Import LCPs to database\OLE DB Destination.Inputs[OLE DB Destination Input].Columns[Copy of COMP_POINT_TY]"
+                      cachedCodepage="1252"
+                      cachedDataType="str"
+                      cachedLength="2"
+                      cachedName="Copy of COMP_POINT_TY"
+                      externalMetadataColumnId="Package\Import LCPs to database\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[COMP_POINT_TY]"
+                      lineageId="Package\Import LCPs to database\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of COMP_POINT_TY]" />
+                    <inputColumn
+                      refId="Package\Import LCPs to database\OLE DB Destination.Inputs[OLE DB Destination Input].Columns[Copy of CIP_CD]"
+                      cachedCodepage="1252"
+                      cachedDataType="str"
+                      cachedLength="10"
+                      cachedName="Copy of CIP_CD"
+                      externalMetadataColumnId="Package\Import LCPs to database\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[CIP_CD]"
+                      lineageId="Package\Import LCPs to database\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of CIP_CD]" />
+                    <inputColumn
+                      refId="Package\Import LCPs to database\OLE DB Destination.Inputs[OLE DB Destination Input].Columns[Copy of TRM_YR_RPTD]"
+                      cachedCodepage="1252"
+                      cachedDataType="str"
+                      cachedLength="5"
+                      cachedName="Copy of TRM_YR_RPTD"
+                      externalMetadataColumnId="Package\Import LCPs to database\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[TRM_YR_RPTD]"
+                      lineageId="Package\Import LCPs to database\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of TRM_YR_RPTD]" />
+                    <inputColumn
+                      refId="Package\Import LCPs to database\OLE DB Destination.Inputs[OLE DB Destination Input].Columns[Copy of APPRENTICE_YN]"
+                      cachedCodepage="1252"
+                      cachedDataType="str"
+                      cachedLength="1"
+                      cachedName="Copy of APPRENTICE_YN"
+                      externalMetadataColumnId="Package\Import LCPs to database\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[APPRENTICE_YN]"
+                      lineageId="Package\Import LCPs to database\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of APPRENTICE_YN]" />
+                    <inputColumn
+                      refId="Package\Import LCPs to database\OLE DB Destination.Inputs[OLE DB Destination Input].Columns[Copy of PGM_CD]"
+                      cachedCodepage="1252"
+                      cachedDataType="str"
+                      cachedLength="4"
+                      cachedName="Copy of PGM_CD"
+                      externalMetadataColumnId="Package\Import LCPs to database\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[PGM_CD]"
+                      lineageId="Package\Import LCPs to database\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of PGM_CD]" />
+                  </inputColumns>
+                  <externalMetadataColumns
+                    isUsed="True">
+                    <externalMetadataColumn
+                      refId="Package\Import LCPs to database\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[ISN_ST_OCP_LCP_STDNT_A]"
+                      dataType="i4"
+                      name="ISN_ST_OCP_LCP_STDNT_A" />
+                    <externalMetadataColumn
+                      refId="Package\Import LCPs to database\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[ADD_DATE]"
+                      codePage="1252"
+                      dataType="str"
+                      length="8"
+                      name="ADD_DATE" />
+                    <externalMetadataColumn
+                      refId="Package\Import LCPs to database\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[ADD_TIME]"
+                      codePage="1252"
+                      dataType="str"
+                      length="7"
+                      name="ADD_TIME" />
+                    <externalMetadataColumn
+                      refId="Package\Import LCPs to database\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[ADD_USER_ID]"
+                      codePage="1252"
+                      dataType="str"
+                      length="8"
+                      name="ADD_USER_ID" />
+                    <externalMetadataColumn
+                      refId="Package\Import LCPs to database\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[ADD_PGM]"
+                      codePage="1252"
+                      dataType="str"
+                      length="8"
+                      name="ADD_PGM" />
+                    <externalMetadataColumn
+                      refId="Package\Import LCPs to database\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[MAINT_DATE]"
+                      codePage="1252"
+                      dataType="str"
+                      length="8"
+                      name="MAINT_DATE" />
+                    <externalMetadataColumn
+                      refId="Package\Import LCPs to database\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[MAINT_TIME]"
+                      codePage="1252"
+                      dataType="str"
+                      length="7"
+                      name="MAINT_TIME" />
+                    <externalMetadataColumn
+                      refId="Package\Import LCPs to database\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[MAINT_USER_ID]"
+                      codePage="1252"
+                      dataType="str"
+                      length="8"
+                      name="MAINT_USER_ID" />
+                    <externalMetadataColumn
+                      refId="Package\Import LCPs to database\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[MAINT_PGM]"
+                      codePage="1252"
+                      dataType="str"
+                      length="8"
+                      name="MAINT_PGM" />
+                    <externalMetadataColumn
+                      refId="Package\Import LCPs to database\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[HOLD]"
+                      dataType="i4"
+                      name="HOLD" />
+                    <externalMetadataColumn
+                      refId="Package\Import LCPs to database\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[STDNT_ID]"
+                      codePage="1252"
+                      dataType="str"
+                      length="9"
+                      name="STDNT_ID" />
+                    <externalMetadataColumn
+                      refId="Package\Import LCPs to database\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[COMP_POINT_TY]"
+                      codePage="1252"
+                      dataType="str"
+                      length="2"
+                      name="COMP_POINT_TY" />
+                    <externalMetadataColumn
+                      refId="Package\Import LCPs to database\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[CIP_CD]"
+                      codePage="1252"
+                      dataType="str"
+                      length="10"
+                      name="CIP_CD" />
+                    <externalMetadataColumn
+                      refId="Package\Import LCPs to database\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[COMP_POINT_ID]"
+                      codePage="1252"
+                      dataType="str"
+                      length="2"
+                      name="COMP_POINT_ID" />
+                    <externalMetadataColumn
+                      refId="Package\Import LCPs to database\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[TRM_YR]"
+                      codePage="1252"
+                      dataType="str"
+                      length="6"
+                      name="TRM_YR" />
+                    <externalMetadataColumn
+                      refId="Package\Import LCPs to database\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[TRM_YR_RPTD]"
+                      codePage="1252"
+                      dataType="str"
+                      length="6"
+                      name="TRM_YR_RPTD" />
+                    <externalMetadataColumn
+                      refId="Package\Import LCPs to database\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[COMPL_DT]"
+                      codePage="1252"
+                      dataType="str"
+                      length="8"
+                      name="COMPL_DT" />
+                    <externalMetadataColumn
+                      refId="Package\Import LCPs to database\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[APPRENTICE_YN]"
+                      codePage="1252"
+                      dataType="str"
+                      length="1"
+                      name="APPRENTICE_YN" />
+                    <externalMetadataColumn
+                      refId="Package\Import LCPs to database\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[PGM_CD]"
+                      codePage="1252"
+                      dataType="str"
+                      length="5"
+                      name="PGM_CD" />
+                  </externalMetadataColumns>
+                </input>
+              </inputs>
+              <outputs>
+                <output
+                  refId="Package\Import LCPs to database\OLE DB Destination.Outputs[OLE DB Destination Error Output]"
+                  exclusionGroup="1"
+                  isErrorOut="true"
+                  name="OLE DB Destination Error Output"
+                  synchronousInputId="Package\Import LCPs to database\OLE DB Destination.Inputs[OLE DB Destination Input]">
+                  <outputColumns>
+                    <outputColumn
+                      refId="Package\Import LCPs to database\OLE DB Destination.Outputs[OLE DB Destination Error Output].Columns[ErrorCode]"
+                      dataType="i4"
+                      lineageId="Package\Import LCPs to database\OLE DB Destination.Outputs[OLE DB Destination Error Output].Columns[ErrorCode]"
+                      name="ErrorCode"
+                      specialFlags="1" />
+                    <outputColumn
+                      refId="Package\Import LCPs to database\OLE DB Destination.Outputs[OLE DB Destination Error Output].Columns[ErrorColumn]"
+                      dataType="i4"
+                      lineageId="Package\Import LCPs to database\OLE DB Destination.Outputs[OLE DB Destination Error Output].Columns[ErrorColumn]"
+                      name="ErrorColumn"
+                      specialFlags="2" />
+                  </outputColumns>
+                  <externalMetadataColumns />
+                </output>
+              </outputs>
+            </component>
+          </components>
+          <paths>
+            <path
+              refId="Package\Import LCPs to database.Paths[Data Conversion Output]"
+              endId="Package\Import LCPs to database\OLE DB Destination.Inputs[OLE DB Destination Input]"
+              name="Data Conversion Output"
+              startId="Package\Import LCPs to database\Data Conversion.Outputs[Data Conversion Output]" />
+            <path
+              refId="Package\Import LCPs to database.Paths[Derived Column Output]"
+              endId="Package\Import LCPs to database\Data Conversion.Inputs[Data Conversion Input]"
+              name="Derived Column Output"
+              startId="Package\Import LCPs to database\Derived Column.Outputs[Derived Column Output]" />
+            <path
+              refId="Package\Import LCPs to database.Paths[Flat File Source Output]"
+              endId="Package\Import LCPs to database\Derived Column.Inputs[Derived Column Input]"
+              name="Flat File Source Output"
+              startId="Package\Import LCPs to database\Flat File Source.Outputs[Flat File Source Output]" />
+          </paths>
+        </pipeline>
+      </DTS:ObjectData>
+    </DTS:Executable>
+    <DTS:Executable
+      DTS:refId="Package\Run First Half of SDB Build"
+      DTS:CreationName="Microsoft.ExecuteSQLTask"
+      DTS:Description="Execute SQL Task"
+      DTS:DTSID="{73D24011-4BD2-45BA-8492-2EF9452E9E2D}"
+      DTS:ExecutableType="Microsoft.ExecuteSQLTask"
+      DTS:LocaleID="-1"
+      DTS:ObjectName="Run First Half of SDB Build"
+      DTS:TaskContact="Execute SQL Task; Microsoft Corporation; SQL Server 2016; © 2015 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1"
+      DTS:ThreadHint="0">
+      <DTS:Variables />
+      <DTS:ObjectData>
+        <SQLTask:SqlTaskData
+          SQLTask:Connection="{17544C4E-6A4F-4A41-B083-08FE7C8012CD}"
+          SQLTask:SqlStatementSource="DECLARE @RC int&#xA;DECLARE @term varchar(6) = ?&#xA;DECLARE @run char(1) = 'E'&#xA;DECLARE @mode char(2) = '35'&#xA;DECLARE @DE1028 int = (SELECT CAST(StateReportingTerm AS INT) FROM MIS.dbo.vwTermYearXwalk xwalk WHERE xwalk.OrionTerm = @term)&#xA;&#xA;EXECUTE @RC = [dbo].[sp_create_sdb_new_LCPs_part_1] &#xA;   @term&#xA;  ,@run&#xA;  ,@mode&#xA;  ,@DE1028" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask">
+          <SQLTask:ParameterBinding
+            SQLTask:ParameterName="@inputTerm"
+            SQLTask:DtsVariableName="User::term"
+            SQLTask:ParameterDirection="Input"
+            SQLTask:DataType="129"
+            SQLTask:ParameterSize="-1" />
+        </SQLTask:SqlTaskData>
+      </DTS:ObjectData>
+    </DTS:Executable>
+    <DTS:Executable
+      DTS:refId="Package\Run Second Half of SDB Build"
+      DTS:CreationName="Microsoft.ExecuteSQLTask"
+      DTS:Description="Execute SQL Task"
+      DTS:DTSID="{591874F1-A509-479B-8F1C-87FF8DA81B34}"
+      DTS:ExecutableType="Microsoft.ExecuteSQLTask"
+      DTS:LocaleID="-1"
+      DTS:ObjectName="Run Second Half of SDB Build"
+      DTS:TaskContact="Execute SQL Task; Microsoft Corporation; SQL Server 2016; © 2015 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1"
+      DTS:ThreadHint="0">
+      <DTS:Variables />
+      <DTS:ObjectData>
+        <SQLTask:SqlTaskData
+          SQLTask:Connection="{17544C4E-6A4F-4A41-B083-08FE7C8012CD}"
+          SQLTask:SqlStatementSource="DECLARE @RC int&#xA;DECLARE @term varchar(6) = ?&#xA;DECLARE @run char(1) = 'E'&#xA;DECLARE @mode char(2) = '35'&#xA;DECLARE @DE1028 int = (SELECT CAST(StateReportingTerm AS INT) FROM MIS.dbo.vwTermYearXwalk xwalk WHERE xwalk.OrionTerm = @term)&#xA;&#xA;EXECUTE @RC = [dbo].[sp_create_sdb_new_LCPs_part_2] &#xA;   @term&#xA;  ,@run&#xA;  ,@mode&#xA;  ,@DE1028" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask">
+          <SQLTask:ParameterBinding
+            SQLTask:ParameterName="@inputTerm"
+            SQLTask:DtsVariableName="User::term"
+            SQLTask:ParameterDirection="Input"
+            SQLTask:DataType="129"
+            SQLTask:ParameterSize="-1" />
+        </SQLTask:SqlTaskData>
+      </DTS:ObjectData>
+    </DTS:Executable>
+    <DTS:Executable
+      DTS:refId="Package\Truncate LCP table"
+      DTS:CreationName="Microsoft.ExecuteSQLTask"
+      DTS:Description="Execute SQL Task"
+      DTS:DTSID="{884ABA29-179F-4A90-A290-FE735E904348}"
+      DTS:ExecutableType="Microsoft.ExecuteSQLTask"
+      DTS:LocaleID="-1"
+      DTS:ObjectName="Truncate LCP table"
+      DTS:TaskContact="Execute SQL Task; Microsoft Corporation; SQL Server 2016; © 2015 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1"
+      DTS:ThreadHint="0">
+      <DTS:Variables />
+      <DTS:ObjectData>
+        <SQLTask:SqlTaskData
+          SQLTask:Connection="{CD1D4A77-6BD1-4AFD-8A21-D30CE6049634}"
+          SQLTask:BypassPrepare="False"
+          SQLTask:SqlStatementSource="TRUNCATE TABLE [dbo].[LCP_BY_CLASS_RECALC]" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
+      </DTS:ObjectData>
+    </DTS:Executable>
+  </DTS:Executables>
+  <DTS:PrecedenceConstraints>
+    <DTS:PrecedenceConstraint
+      DTS:refId="Package.PrecedenceConstraints[Constraint]"
+      DTS:CreationName=""
+      DTS:DTSID="{E372A36A-13C8-4C44-AE14-BC86BF0CEBF0}"
+      DTS:From="Package\Run First Half of SDB Build"
+      DTS:LogicalAnd="True"
+      DTS:ObjectName="Constraint"
+      DTS:To="Package\Calculate LCPs" />
+    <DTS:PrecedenceConstraint
+      DTS:refId="Package.PrecedenceConstraints[Constraint 1]"
+      DTS:CreationName=""
+      DTS:DTSID="{CC8FF649-3C8A-4DFA-AFCC-039A82A21FC5}"
+      DTS:From="Package\Calculate LCPs"
+      DTS:LogicalAnd="True"
+      DTS:ObjectName="Constraint 1"
+      DTS:To="Package\Import LCPs to database" />
+    <DTS:PrecedenceConstraint
+      DTS:refId="Package.PrecedenceConstraints[Constraint 2]"
+      DTS:CreationName=""
+      DTS:DTSID="{294DB439-92DE-4ADA-A9FD-29EE8A748259}"
+      DTS:From="Package\Import LCPs to database"
+      DTS:LogicalAnd="True"
+      DTS:ObjectName="Constraint 2"
+      DTS:To="Package\Run Second Half of SDB Build" />
+    <DTS:PrecedenceConstraint
+      DTS:refId="Package.PrecedenceConstraints[Constraint 3]"
+      DTS:CreationName=""
+      DTS:DTSID="{D8DB3CD8-2FE4-48B7-B43A-82E2CB49B09E}"
+      DTS:From="Package\Truncate LCP table"
+      DTS:LogicalAnd="True"
+      DTS:ObjectName="Constraint 3"
+      DTS:To="Package\Run First Half of SDB Build" />
+  </DTS:PrecedenceConstraints>
+  <DTS:DesignTimeProperties><![CDATA[<?xml version="1.0"?>
+<!--This CDATA section contains the layout information of the package. The section includes information such as (x,y) coordinates, width, and height.-->
+<!--If you manually edit this section and make a mistake, you can delete it. -->
+<!--The package will still be able to load normally but the previous layout information will be lost and the designer will automatically re-arrange the elements on the design surface.-->
+<Objects
+  Version="8">
+  <!--Each node below will contain properties that do not affect runtime behavior.-->
+  <Package
+    design-time-name="Package">
+    <LayoutInfo>
+      <GraphLayout
+        Capacity="16" xmlns="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph" xmlns:mssgle="clr-namespace:Microsoft.SqlServer.Graph.LayoutEngine;assembly=Microsoft.SqlServer.Graph" xmlns:assembly="http://schemas.microsoft.com/winfx/2006/xaml">
+        <NodeLayout
+          Size="147,42"
+          Id="Package\Calculate LCPs"
+          TopLeft="330,193" />
+        <NodeLayout
+          Size="195,42"
+          Id="Package\Import LCPs to database"
+          TopLeft="346,270" />
+        <NodeLayout
+          Size="205,42"
+          Id="Package\Run First Half of SDB Build"
+          TopLeft="334,111" />
+        <NodeLayout
+          Size="219,42"
+          Id="Package\Run Second Half of SDB Build"
+          TopLeft="335,349" />
+        <NodeLayout
+          Size="168,42"
+          Id="Package\Truncate LCP table"
+          TopLeft="332,24" />
+        <EdgeLayout
+          Id="Package.PrecedenceConstraints[Constraint]"
+          TopLeft="436.5,153">
+          <EdgeLayout.Curve>
+            <mssgle:Curve
+              StartConnector="{assembly:Null}"
+              EndConnector="-33,40"
+              Start="0,0"
+              End="-33,32.5">
+              <mssgle:Curve.Segments>
+                <mssgle:SegmentCollection
+                  Capacity="5">
+                  <mssgle:LineSegment
+                    End="0,16" />
+                  <mssgle:CubicBezierSegment
+                    Point1="0,16"
+                    Point2="0,20"
+                    Point3="-4,20" />
+                  <mssgle:LineSegment
+                    End="-29,20" />
+                  <mssgle:CubicBezierSegment
+                    Point1="-29,20"
+                    Point2="-33,20"
+                    Point3="-33,24" />
+                  <mssgle:LineSegment
+                    End="-33,32.5" />
+                </mssgle:SegmentCollection>
+              </mssgle:Curve.Segments>
+            </mssgle:Curve>
+          </EdgeLayout.Curve>
+          <EdgeLayout.Labels>
+            <EdgeLabelCollection />
+          </EdgeLayout.Labels>
+        </EdgeLayout>
+        <EdgeLayout
+          Id="Package.PrecedenceConstraints[Constraint 1]"
+          TopLeft="403.5,235">
+          <EdgeLayout.Curve>
+            <mssgle:Curve
+              StartConnector="{assembly:Null}"
+              EndConnector="40,35"
+              Start="0,0"
+              End="40,27.5">
+              <mssgle:Curve.Segments>
+                <mssgle:SegmentCollection
+                  Capacity="5">
+                  <mssgle:LineSegment
+                    End="0,13.5" />
+                  <mssgle:CubicBezierSegment
+                    Point1="0,13.5"
+                    Point2="0,17.5"
+                    Point3="4,17.5" />
+                  <mssgle:LineSegment
+                    End="36,17.5" />
+                  <mssgle:CubicBezierSegment
+                    Point1="36,17.5"
+                    Point2="40,17.5"
+                    Point3="40,21.5" />
+                  <mssgle:LineSegment
+                    End="40,27.5" />
+                </mssgle:SegmentCollection>
+              </mssgle:Curve.Segments>
+            </mssgle:Curve>
+          </EdgeLayout.Curve>
+          <EdgeLayout.Labels>
+            <EdgeLabelCollection />
+          </EdgeLayout.Labels>
+        </EdgeLayout>
+        <EdgeLayout
+          Id="Package.PrecedenceConstraints[Constraint 2]"
+          TopLeft="444,312">
+          <EdgeLayout.Curve>
+            <mssgle:Curve
+              StartConnector="{assembly:Null}"
+              EndConnector="0,37"
+              Start="0,0"
+              End="0,29.5">
+              <mssgle:Curve.Segments>
+                <mssgle:SegmentCollection
+                  Capacity="5">
+                  <mssgle:LineSegment
+                    End="0,29.5" />
+                </mssgle:SegmentCollection>
+              </mssgle:Curve.Segments>
+            </mssgle:Curve>
+          </EdgeLayout.Curve>
+          <EdgeLayout.Labels>
+            <EdgeLabelCollection />
+          </EdgeLayout.Labels>
+        </EdgeLayout>
+        <EdgeLayout
+          Id="Package.PrecedenceConstraints[Constraint 3]"
+          TopLeft="416,66">
+          <EdgeLayout.Curve>
+            <mssgle:Curve
+              StartConnector="{assembly:Null}"
+              EndConnector="20.5,45"
+              Start="0,0"
+              End="20.5,37.5">
+              <mssgle:Curve.Segments>
+                <mssgle:SegmentCollection
+                  Capacity="5">
+                  <mssgle:LineSegment
+                    End="0,18.5" />
+                  <mssgle:CubicBezierSegment
+                    Point1="0,18.5"
+                    Point2="0,22.5"
+                    Point3="4,22.5" />
+                  <mssgle:LineSegment
+                    End="16.5,22.5" />
+                  <mssgle:CubicBezierSegment
+                    Point1="16.5,22.5"
+                    Point2="20.5,22.5"
+                    Point3="20.5,26.5" />
+                  <mssgle:LineSegment
+                    End="20.5,37.5" />
+                </mssgle:SegmentCollection>
+              </mssgle:Curve.Segments>
+            </mssgle:Curve>
+          </EdgeLayout.Curve>
+          <EdgeLayout.Labels>
+            <EdgeLabelCollection />
+          </EdgeLayout.Labels>
+        </EdgeLayout>
+      </GraphLayout>
+    </LayoutInfo>
+  </Package>
+  <TaskHost
+    design-time-name="Package\Import LCPs to database">
+    <LayoutInfo>
+      <GraphLayout
+        Capacity="8" xmlns="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph" xmlns:mssgle="clr-namespace:Microsoft.SqlServer.Graph.LayoutEngine;assembly=Microsoft.SqlServer.Graph" xmlns:assembly="http://schemas.microsoft.com/winfx/2006/xaml">
+        <NodeLayout
+          Size="151,42"
+          Id="Package\Import LCPs to database\Flat File Source"
+          TopLeft="229,108" />
+        <NodeLayout
+          Size="156,42"
+          Id="Package\Import LCPs to database\Data Conversion"
+          TopLeft="211,253" />
+        <NodeLayout
+          Size="171,42"
+          Id="Package\Import LCPs to database\OLE DB Destination"
+          TopLeft="200,326" />
+        <NodeLayout
+          Size="154,42"
+          Id="Package\Import LCPs to database\Derived Column"
+          TopLeft="213,193" />
+        <EdgeLayout
+          Id="Package\Import LCPs to database.Paths[Flat File Source Output]"
+          TopLeft="304.5,150">
+          <EdgeLayout.Curve>
+            <mssgle:Curve
+              StartConnector="{assembly:Null}"
+              EndConnector="-14.5,43"
+              Start="0,0"
+              End="-14.5,35.5">
+              <mssgle:Curve.Segments>
+                <mssgle:SegmentCollection
+                  Capacity="5">
+                  <mssgle:LineSegment
+                    End="0,17.5" />
+                  <mssgle:CubicBezierSegment
+                    Point1="0,17.5"
+                    Point2="0,21.5"
+                    Point3="-4,21.5" />
+                  <mssgle:LineSegment
+                    End="-10.5,21.5" />
+                  <mssgle:CubicBezierSegment
+                    Point1="-10.5,21.5"
+                    Point2="-14.5,21.5"
+                    Point3="-14.5,25.5" />
+                  <mssgle:LineSegment
+                    End="-14.5,35.5" />
+                </mssgle:SegmentCollection>
+              </mssgle:Curve.Segments>
+            </mssgle:Curve>
+          </EdgeLayout.Curve>
+          <EdgeLayout.Labels>
+            <EdgeLabelCollection />
+          </EdgeLayout.Labels>
+        </EdgeLayout>
+        <EdgeLayout
+          Id="Package\Import LCPs to database.Paths[Derived Column Output]"
+          TopLeft="367,214">
+          <EdgeLayout.Curve>
+            <mssgle:Curve
+              StartConnector="{assembly:Null}"
+              EndConnector="0,60"
+              Start="0,0"
+              End="7.5,60">
+              <mssgle:Curve.Segments>
+                <mssgle:SegmentCollection
+                  Capacity="5">
+                  <mssgle:LineSegment
+                    End="18.5,0" />
+                  <mssgle:CubicBezierSegment
+                    Point1="18.5,0"
+                    Point2="22.5,0"
+                    Point3="22.5,4" />
+                  <mssgle:LineSegment
+                    End="22.5,56" />
+                  <mssgle:CubicBezierSegment
+                    Point1="22.5,56"
+                    Point2="22.5,60"
+                    Point3="18.5,60" />
+                  <mssgle:LineSegment
+                    End="7.5,60" />
+                </mssgle:SegmentCollection>
+              </mssgle:Curve.Segments>
+            </mssgle:Curve>
+          </EdgeLayout.Curve>
+          <EdgeLayout.Labels>
+            <EdgeLabelCollection />
+          </EdgeLayout.Labels>
+        </EdgeLayout>
+        <EdgeLayout
+          Id="Package\Import LCPs to database.Paths[Data Conversion Output]"
+          TopLeft="287.25,295">
+          <EdgeLayout.Curve>
+            <mssgle:Curve
+              StartConnector="{assembly:Null}"
+              EndConnector="0,31"
+              Start="0,0"
+              End="0,23.5">
+              <mssgle:Curve.Segments>
+                <mssgle:SegmentCollection
+                  Capacity="5">
+                  <mssgle:LineSegment
+                    End="0,23.5" />
+                </mssgle:SegmentCollection>
+              </mssgle:Curve.Segments>
+            </mssgle:Curve>
+          </EdgeLayout.Curve>
+          <EdgeLayout.Labels>
+            <EdgeLabelCollection />
+          </EdgeLayout.Labels>
+        </EdgeLayout>
+      </GraphLayout>
+    </LayoutInfo>
+  </TaskHost>
+  <PipelineComponentMetadata
+    design-time-name="Package\Import LCPs to database\OLE DB Destination">
+    <Properties>
+      <Property>
+        <Name>DataSourceViewID</Name>
+      </Property>
+      <Property>
+        <Name>TableInfoObjectType</Name>
+        <Value
+          type="q2:string">Table</Value>
+      </Property>
+    </Properties>
+  </PipelineComponentMetadata>
+</Objects>]]></DTS:DesignTimeProperties>
+</DTS:Executable>
