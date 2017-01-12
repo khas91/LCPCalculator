@@ -309,6 +309,24 @@ namespace LCPCalculator
             int[] languageRanges = new int[] { 0, 390, 491, 524, 559 };
             String[] languageLCPs = new String[] { "J", "K", "M", "N" };
 
+            Dictionary<String, int[]> testFormRanges = new Dictionary<string, int[]>();
+
+            testFormRanges.Add("REE", new int[] { 160, 367 });
+            testFormRanges.Add("REM", new int[] { 368, 460 });
+            testFormRanges.Add("RED", new int[] { 461, 517 });
+            testFormRanges.Add("REA", new int[] { 518, 566 });
+
+            testFormRanges.Add("MAE", new int[] { 160, 313 });
+            testFormRanges.Add("MAM", new int[] { 341, 441 });
+            testFormRanges.Add("MAD", new int[] { 442, 505 });
+            testFormRanges.Add("MAA", new int[] { 506, 565 });
+
+            testFormRanges.Add("LAE", new int[] { 265, 389 });
+            testFormRanges.Add("LAM", new int[] { 390, 490 });
+            testFormRanges.Add("LAD", new int[] { 491, 523 });
+            testFormRanges.Add("LAA", new int[] { 524, 559 });
+
+            /*
             comm = new SqlCommand("SELECT                                                                                              "
                                   + "      class.STDNT_ID                                                                              "
                                   + "      ,class.CRS_ID                                                                               "
@@ -339,6 +357,68 @@ namespace LCPCalculator
                                   + "      ,class.REF_NUM", conn);
 
             reader = comm.ExecuteReader();
+            */
+
+            comm = new SqlCommand("IF OBJECT_ID('tempdb..##ABEEnrollments') IS NOT NULL DROP TABLE ##ABEEnrollments                   "
+                                 + "SELECT                                                                                            "
+                                 + "      class.REF_NUM                                                                               "
+                                 + "      ,class.STDNT_ID                                                                             "
+                                 + "      ,class.CRS_ID                                                                               "
+                                 + "      ,MAX(classlog.LOG_DATE) AS[RegDate]                                                         "
+                                 + "      ,xwalk.SUBJECT                                                                              "
+                                 + "  INTO                                                                                            "
+                                 + "      ##ABEEnrollments                                                                            "
+                                 + "  FROM                                                                                            "
+                                 + "      MIS.dbo.ST_STDNT_CLS_A_235 class                                                            "
+                                 + "      INNER JOIN MIS.dbo.ST_STDNT_CLS_LOG_230 classlog ON classlog.REF_NUM = class.REF_NUM        "
+                                 + "      INNER JOIN Adhoc.dbo.Course_Subject_Area_Xwalk xwalk ON xwalk.CRS_ID = LEFT(class.CRS_ID, 7)"
+                                 + "  WHERE                                                                                           "
+                                 + "      class.EFF_TRM < '" + term + "'                                                              "
+                                 + "      AND LEFT(class.CRS_ID, 3) IN('ABE','ABX')                                                   "
+                                 + "      AND classlog.LOG_ACTION = 'A'                                                               "
+                                 + "  GROUP BY                                                                                        "
+                                 + "      class.REF_NUM,class.STDNT_ID,class.CRS_ID,xwalk.SUBJECT                                     "
+                                 + "                                                                                                  "
+                                 + "  SELECT                                                                                          "
+                                 + "      class.STDNT_ID                                                                              "
+                                 + "      ,class.CRS_ID                                                                               "
+                                 + "      ,class.REF_NUM                                                                              "
+                                 + "      ,MAX(log.LOG_DATE) AS REG_DT                                                                "
+                                 + "      ,LEFT(test.TST_FRM, 1) AS [Form]                                                            "
+                                 + "      ,test.TST_DT                                                                                "
+                                 + "      ,test.SUBTEST                                                                               "
+                                 + "      ,test.SCALE_SCORE                                                                           "
+                                 + "  FROM                                                                                            "
+                                 + "      MIS.dbo.ST_STDNT_CLS_A_235 class                                                            "
+                                 + "      INNER JOIN MIS.dbo.ST_STDNT_CLS_LOG_230 log ON log.REF_NUM = class.REF_NUM                  "
+                                 + "      INNER JOIN Adhoc.dbo.Course_Subject_Area_Xwalk xwalk ON xwalk.CRS_ID = LEFT(class.CRS_ID, 7)"
+                                 + "      INNER JOIN MIS.dbo.ST_SUBTEST_A_155 test ON test.STUDENT_ID = class.STDNT_ID                "
+                                 + "                                                 AND test.SUBTEST = xwalk.SUBJECT                 "
+                                 + "      INNER JOIN ##ABEEnrollments abe ON abe.STDNT_ID = class.STDNT_ID                            "
+                                 + "                                     AND abe.SUBJECT = xwalk.SUBJECT                              "
+                                 + "  WHERE                                                                                           "
+                                 + "      class.EFF_TRM = '" + term + "'                                                              "
+                                 + "      AND log.LOG_ACTION = 'A'                                                                    "
+                                 + "      AND test.TST_TY = 'TABE'                                                                    "
+                                 + "      AND test.TST_DT > abe.RegDate                                                               "
+                                 + "      AND SCALE_SCORE > 0                                                                         "
+                                 + "      AND LEFT(test.TST_FRM, 1) IN ('E','M','D','A')                                              "
+                                 + "  GROUP BY                                                                                        "
+                                 + "      class.STDNT_ID                                                                              "
+                                 + "      ,class.CRS_ID                                                                               "
+                                 + "      ,class.REF_NUM                                                                              "
+                                 + "      ,test.TST_DT                                                                                "
+                                 + "      ,test.SUBTEST                                                                               "
+                                 + "      ,test.SCALE_SCORE                                                                           "
+                                 + "      ,abe.RegDate                                                                                "
+                                 + "      ,test.TST_FRM                                                                               "
+                                 + "  HAVING                                                                                          "
+                                 + "      abe.RegDate < MAX(log.LOG_DATE)                                                             "
+                                 + "  ORDER BY                                                                                        "
+                                 + "      class.STDNT_ID                                                                              "
+                                 + "      ,class.REF_NUM", conn);
+
+            reader = comm.ExecuteReader();
 
             String curStudent = null;
             String curCourse = null;
@@ -355,6 +435,7 @@ namespace LCPCalculator
                 String subject = reader["SUBTEST"].ToString();
                 String refNum = reader["REF_NUM"].ToString();
                 String courseID = reader["CRS_ID"].ToString();
+                String form = reader["Form"].ToString();
                 int score = int.Parse(reader["SCALE_SCORE"].ToString());
                 DateTime registrationDate = DateTime.ParseExact(reader["REG_DT"].ToString(), "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None);
                 DateTime testDate = DateTime.ParseExact(reader["TST_DT"].ToString(), "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None);
@@ -446,7 +527,7 @@ namespace LCPCalculator
                     curPostTestDate = testDate;
                     postTestScore = score;
                 }
-                if (testDate <= registrationDate && testDate > curPreTestDate && score != 0)
+                if (testDate <= registrationDate && score >= testFormRanges[subject + form][0] && score <= testFormRanges[subject + form][1])
                 {
                     curPreTestDate = testDate;
                     preTestScore = score;
@@ -461,7 +542,7 @@ namespace LCPCalculator
 
             reader.Close();
 
-            comm = new SqlCommand("SELECT                                                                                          "
+            comm = new SqlCommand("SELECT                                                                                           "
                                   + "      STUDENT_ID                                                                               "
                                   + "      ,Form                                                                                    "
                                   + "      ,TST_SCR                                                                                 "
