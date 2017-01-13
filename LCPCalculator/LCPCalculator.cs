@@ -428,7 +428,7 @@ namespace LCPCalculator
 
                         foreach (Tuple<String, String, String, OrionTerm> previouslyCalculatedLCP in calculatedLCPs)
                         {
-                            if (previouslyCalculatedLCP.Item1 == studentID && previouslyCalculatedLCP.Item2 == LCPs[i] &&
+                            if (previouslyCalculatedLCP.Item1 == studentID && previouslyCalculatedLCP.Item3 == LCPs[i] &&
                                 (previouslyCalculatedLCP.Item4.getStateReportingYear() == term.getStateReportingYear()
                                 || previouslyCalculatedLCP.Item4.getStateReportingYear() == term.getStateReportingYear().prevReportingYear()))
                             {
