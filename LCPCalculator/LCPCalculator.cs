@@ -310,234 +310,142 @@ namespace LCPCalculator
             String[] languageLCPs = new String[] { "J", "K", "M", "N" };
 
             Dictionary<String, int[]> testFormRanges = new Dictionary<string, int[]>();
-
-            testFormRanges.Add("REE", new int[] { 160, 367 });
-            testFormRanges.Add("REM", new int[] { 368, 460 });
-            testFormRanges.Add("RED", new int[] { 461, 517 });
-            testFormRanges.Add("REA", new int[] { 518, 566 });
-
-            testFormRanges.Add("MAE", new int[] { 160, 313 });
-            testFormRanges.Add("MAM", new int[] { 341, 441 });
-            testFormRanges.Add("MAD", new int[] { 442, 505 });
-            testFormRanges.Add("MAA", new int[] { 506, 565 });
-
-            testFormRanges.Add("LAE", new int[] { 265, 389 });
-            testFormRanges.Add("LAM", new int[] { 390, 490 });
-            testFormRanges.Add("LAD", new int[] { 491, 523 });
-            testFormRanges.Add("LAA", new int[] { 524, 559 });
-
-            /*
-            comm = new SqlCommand("SELECT                                                                                              "
-                                  + "      class.STDNT_ID                                                                              "
-                                  + "      ,class.CRS_ID                                                                               "
-                                  + "      ,class.REF_NUM                                                                              "
-                                  + "      ,MAX(log.LOG_DATE) AS REG_DT                                                                "
-                                  + "      ,test.TST_DT                                                                                "
-                                  + "      ,test.SUBTEST                                                                               "
-                                  + "      ,test.SCALE_SCORE                                                                           "
-                                  + "  FROM                                                                                            "
-                                  + "      MIS.dbo.ST_STDNT_CLS_A_235 class                                                            "
-                                  + "      INNER JOIN MIS.dbo.ST_STDNT_CLS_LOG_230 log ON log.REF_NUM = class.REF_NUM                  "
-                                  + "      INNER JOIN Adhoc.dbo.Course_Subject_Area_Xwalk xwalk ON xwalk.CRS_ID = LEFT(class.CRS_ID, 7)"
-                                  + "      INNER JOIN MIS.dbo.ST_SUBTEST_A_155 test ON test.STUDENT_ID = class.STDNT_ID                "
-                                  + "   		                                       AND test.SUBTEST = xwalk.SUBJECT                "
-                                  + "  WHERE                                                                                           "
-                                  + "      class.EFF_TRM = '" + term + "'                                                              "
-                                  + "      AND log.LOG_ACTION = 'A'                                                                    "
-                                  + "      AND test.TST_TY = 'TABE'                                                                    "
-                                  + "  GROUP BY                                                                                        "
-                                  + "      class.STDNT_ID                                                                              "
-                                  + "      ,class.CRS_ID                                                                               "
-                                  + "      ,class.REF_NUM                                                                              "
-                                  + "      ,test.TST_DT                                                                                "
-                                  + "      ,test.SUBTEST                                                                               "
-                                  + "      ,test.SCALE_SCORE                                                                           "
-                                  + "  ORDER BY                                                                                        "
-                                  + "      class.STDNT_ID                                                                              "
-                                  + "      ,class.REF_NUM", conn);
-
+          
+            comm = new SqlCommand("SELECT                                                                                                                      "
+                                  +"      class.STDNT_ID, class.CRS_ID, class.REF_NUM, xwalk.SUBJECT                                                           "
+	                              +"      ,pretest.TST_DT AS [Pretest Date], pretest.SCALE_SCORE AS [Pretest Score],                                           "
+                                  +"      pretabe.LOWER_RANGE AS [Pretest Lower], pretabe.UPPER_RANGE AS [Pretest Upper], MAX(classlog.LOG_DATE) AS [RegDate]  "
+	                              +"      ,posttest.TST_DT AS [Posttest Date], posttest.SCALE_SCORE AS [Posttest Score],                                       "
+                                  +"      posttabe.LOWER_RANGE AS [Posttest Lower], posttabe.UPPER_RANGE AS [Posttest Upper]                                   "
+                                  +"  FROM                                                                                                                     "
+                                  +"      MIS.[dbo].[ST_STDNT_CLS_A_235]                                                                                       "
+                                  +"          class                                                                                                            "
+                                  +"      INNER JOIN MIS.[dbo].[ST_STDNT_CLS_LOG_230] classlog ON classlog.REF_NUM = class.REF_NUM                             "
+                                  +"                                                           AND classlog.STDNT_ID = class.STDNT_ID                          "
+                                  +"      INNER JOIN Adhoc.[dbo].[Course_Subject_Area_Xwalk] xwalk ON xwalk.CRS_ID = LEFT(class.CRS_ID, 7)                     "
+	                              +"      INNER JOIN MIS.dbo.ST_SUBTEST_A_155 pretest ON pretest.SUBTEST = xwalk.SUBJECT                                       "
+                                  +"                                               AND pretest.STUDENT_ID = class.STDNT_ID                                     "
+                                  +"      INNER JOIN MIS.dbo.ST_SUBTEST_A_155 posttest ON posttest.SUBTEST = xwalk.SUBJECT                                     "
+                                  +"                                               AND posttest.STUDENT_ID = class.STDNT_ID                                    "
+                                  +"      LEFT JOIN Adhoc.dbo.TABEFormRanges pretabe ON pretabe.Form = LEFT(pretest.TST_FRM, 1)                                "
+                                  +"                                               AND pretabe.SUBTEST = pretest.SUBTEST                                       "
+                                  +"      LEFT JOIN Adhoc.dbo.TABEFormRanges posttabe ON posttabe.Form = LEFT(posttest.TST_FRM, 1)                             "
+                                  +"                                               AND posttabe.SUBTEST = posttest.SUBTEST                                     "
+                                  +"  WHERE                                                                                                                    "
+                                  +"      class.EFF_TRM = '" + term + "'                                                                                       "
+	                              +"      AND classlog.LOG_ACTION = 'A'                                                                                        "
+	                              +"      AND pretest.TST_TY = 'TABE'                                                                                          "
+                                  +"      AND pretest.SCALE_SCORE > 0                                                                                          "
+                                  +"      AND posttest.TST_TY = 'TABE'                                                                                         "
+                                  +"      AND pretest.SCALE_SCORE<posttest.SCALE_SCORE                                                                         "
+                                  +"      AND pretest.TST_DT> (SELECT                                                                                          "
+                                  +"                              SESS_BEG_DT                                                                                  "
+                                  +"                          FROM                                                                                             "
+                                  +"                              MIS.dbo.vwTermYearXwalk xwalk                                                                "
+                                  +"                          WHERE                                                                                            "
+                                  +"                              OrionTerm = '" + term.getStateReportingYear().prevReportingYear().getNthTerm(1).ToOrionTerm() + "')"                                  +"  GROUP BY                                                                                                                 "
+                                  +"      class.STDNT_ID, class.CRS_ID, class.REF_NUM, xwalk.SUBJECT                                                           "
+	                              +"      , pretest.TST_DT, pretest.SCALE_SCORE, posttest.TST_DT, posttest.SCALE_SCORE                                         "
+	                              +"      , posttabe.LOWER_RANGE, posttabe.UPPER_RANGE, pretabe.LOWER_RANGE, pretabe.UPPER_RANGE                               "
+                                  +"  HAVING                                                                                                                   "
+                                  +"      posttest.TST_DT > MAX(classlog.LOG_DATE)                                                                             "
+                                  +"      AND pretest.TST_DT <= MAX(classlog.LOG_DATE)                                                                         "
+                                  +"  ORDER BY                                                                                                                 "
+                                  +"      class.STDNT_ID, class.REF_NUM, pretest.TST_DT", conn);
             reader = comm.ExecuteReader();
-            */
-
-            comm = new SqlCommand("IF OBJECT_ID('tempdb..##ABEEnrollments') IS NOT NULL DROP TABLE ##ABEEnrollments                   "
-                                 + "SELECT                                                                                            "
-                                 + "      class.REF_NUM                                                                               "
-                                 + "      ,class.STDNT_ID                                                                             "
-                                 + "      ,class.CRS_ID                                                                               "
-                                 + "      ,MAX(classlog.LOG_DATE) AS[RegDate]                                                         "
-                                 + "      ,xwalk.SUBJECT                                                                              "
-                                 + "  INTO                                                                                            "
-                                 + "      ##ABEEnrollments                                                                            "
-                                 + "  FROM                                                                                            "
-                                 + "      MIS.dbo.ST_STDNT_CLS_A_235 class                                                            "
-                                 + "      INNER JOIN MIS.dbo.ST_STDNT_CLS_LOG_230 classlog ON classlog.REF_NUM = class.REF_NUM        "
-                                 + "      INNER JOIN Adhoc.dbo.Course_Subject_Area_Xwalk xwalk ON xwalk.CRS_ID = LEFT(class.CRS_ID, 7)"
-                                 + "  WHERE                                                                                           "
-                                 + "      class.EFF_TRM < '" + term + "'                                                              "
-                                 + "      AND LEFT(class.CRS_ID, 3) IN('ABE','ABX')                                                   "
-                                 + "      AND classlog.LOG_ACTION = 'A'                                                               "
-                                 + "  GROUP BY                                                                                        "
-                                 + "      class.REF_NUM,class.STDNT_ID,class.CRS_ID,xwalk.SUBJECT                                     "
-                                 + "                                                                                                  "
-                                 + "  SELECT                                                                                          "
-                                 + "      class.STDNT_ID                                                                              "
-                                 + "      ,class.CRS_ID                                                                               "
-                                 + "      ,class.REF_NUM                                                                              "
-                                 + "      ,MAX(log.LOG_DATE) AS REG_DT                                                                "
-                                 + "      ,LEFT(test.TST_FRM, 1) AS [Form]                                                            "
-                                 + "      ,test.TST_DT                                                                                "
-                                 + "      ,test.SUBTEST                                                                               "
-                                 + "      ,test.SCALE_SCORE                                                                           "
-                                 + "  FROM                                                                                            "
-                                 + "      MIS.dbo.ST_STDNT_CLS_A_235 class                                                            "
-                                 + "      INNER JOIN MIS.dbo.ST_STDNT_CLS_LOG_230 log ON log.REF_NUM = class.REF_NUM                  "
-                                 + "      INNER JOIN Adhoc.dbo.Course_Subject_Area_Xwalk xwalk ON xwalk.CRS_ID = LEFT(class.CRS_ID, 7)"
-                                 + "      INNER JOIN MIS.dbo.ST_SUBTEST_A_155 test ON test.STUDENT_ID = class.STDNT_ID                "
-                                 + "                                                 AND test.SUBTEST = xwalk.SUBJECT                 "
-                                 + "      INNER JOIN ##ABEEnrollments abe ON abe.STDNT_ID = class.STDNT_ID                            "
-                                 + "                                     AND abe.SUBJECT = xwalk.SUBJECT                              "
-                                 + "  WHERE                                                                                           "
-                                 + "      class.EFF_TRM = '" + term + "'                                                              "
-                                 + "      AND log.LOG_ACTION = 'A'                                                                    "
-                                 + "      AND test.TST_TY = 'TABE'                                                                    "
-                                 + "      AND test.TST_DT > abe.RegDate                                                               "
-                                 + "      AND SCALE_SCORE > 0                                                                         "
-                                 + "      AND LEFT(test.TST_FRM, 1) IN ('E','M','D','A')                                              "
-                                 + "  GROUP BY                                                                                        "
-                                 + "      class.STDNT_ID                                                                              "
-                                 + "      ,class.CRS_ID                                                                               "
-                                 + "      ,class.REF_NUM                                                                              "
-                                 + "      ,test.TST_DT                                                                                "
-                                 + "      ,test.SUBTEST                                                                               "
-                                 + "      ,test.SCALE_SCORE                                                                           "
-                                 + "      ,abe.RegDate                                                                                "
-                                 + "      ,test.TST_FRM                                                                               "
-                                 + "  HAVING                                                                                          "
-                                 + "      abe.RegDate < MAX(log.LOG_DATE)                                                             "
-                                 + "  ORDER BY                                                                                        "
-                                 + "      class.STDNT_ID                                                                              "
-                                 + "      ,class.REF_NUM", conn);
-
-            reader = comm.ExecuteReader();
-
-            String curStudent = null;
-            String curCourse = null;
-            String curRefNum = null;
-            String curSubject = null;
-            DateTime curPreTestDate = new DateTime();
-            DateTime curPostTestDate = new DateTime();
-            int preTestScore = 0;
-            int postTestScore = 0;
 
             while (reader.Read())
             {
                 String studentID = reader["STDNT_ID"].ToString();
-                String subject = reader["SUBTEST"].ToString();
+                String subject = reader["SUBJECT"].ToString();
                 String refNum = reader["REF_NUM"].ToString();
                 String courseID = reader["CRS_ID"].ToString();
-                String form = reader["Form"].ToString();
-                int score = int.Parse(reader["SCALE_SCORE"].ToString());
-                DateTime registrationDate = DateTime.ParseExact(reader["REG_DT"].ToString(), "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None);
-                DateTime testDate = DateTime.ParseExact(reader["TST_DT"].ToString(), "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None);
 
-                if (curStudent != null && curRefNum != refNum)
+                int pretestScore = int.Parse(reader["Pretest Score"].ToString());
+                int posttestScore = int.Parse(reader["Posttest Score"].ToString());
+                
+                int preLowerBound = int.Parse(reader["Pretest Lower"].ToString() == "" ? "0" : reader["Pretest Lower"].ToString());
+                int preUpperBound = int.Parse(reader["Pretest Upper"].ToString() == "" ? "999" : reader["Pretest Upper"].ToString());
+
+                int postLowerBound = int.Parse(reader["Posttest Lower"].ToString() == "" ? "0" : reader["Posttest Lower"].ToString());
+                int postUpperBound = int.Parse(reader["Posttest Upper"].ToString() == "" ? "999" : reader["Posttest Upper"].ToString());
+                
+                DateTime registrationDate = DateTime.ParseExact(reader["RegDate"].ToString(), "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None);
+                DateTime pretestDate = DateTime.ParseExact(reader["Pretest Date"].ToString(), "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None);
+                DateTime posttestDate = DateTime.ParseExact(reader["Posttest Date"].ToString(), "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None);
+
+                int[] scoreRanges = null;
+                String[] LCPs = null;
+                int initialFunctioningLevel = 0;
+                int finalFunctioningLevel = 0;
+
+                if (subject == "RE")
                 {
-                    if (preTestScore != 0 && postTestScore != 0)
+                    scoreRanges = readingRanges;
+                    LCPs = readingLCPs;
+                }
+                else if (subject == "MA")
+                {
+                    scoreRanges = mathRanges;
+                    LCPs = mathLCPs;
+                }
+                else
+                {
+                    scoreRanges = languageRanges;
+                    LCPs = languageLCPs;
+                }
+
+                for (int i = 0; i < scoreRanges.Length && pretestScore >= scoreRanges[i]; i++)
+                {
+                    initialFunctioningLevel = i;
+                }
+
+                for (int i = initialFunctioningLevel; i < scoreRanges.Length && posttestScore >= scoreRanges[i];)
+                {
+                    finalFunctioningLevel = i++;
+                }
+
+                for (int i = initialFunctioningLevel; i < finalFunctioningLevel; i++)
+                {
+                    List<String> studentLCPs = previouslyReportedLCPs.ContainsKey(studentID) ? previouslyReportedLCPs[studentID] : new List<String>();
+
+                    bool previouslyCalculated = false;
+
+                    if (!studentLCPs.Contains(LCPs[i]))
                     {
-                        int[] scoreRanges = null;
-                        String[] LCPs = null;
-                        int initialFunctioningLevel = 0;
-                        int finalFunctioningLevel = 0;
+                        Tuple<String, String, OrionTerm> LCP = new Tuple<string, string, OrionTerm>(studentID, LCPs[i], term);
 
-                        if (curSubject == "RE")
+                        foreach (Tuple<String, String, String, OrionTerm> previouslyCalculatedLCP in previouslyCalculatedLCPs)
                         {
-                            scoreRanges = readingRanges;
-                            LCPs = readingLCPs;
-                        }
-                        else if (curSubject == "MA")
-                        {
-                            scoreRanges = mathRanges;
-                            LCPs = mathLCPs;
-                        }
-                        else
-                        {
-                            scoreRanges = languageRanges;
-                            LCPs = languageLCPs;
-                        }
-
-                        for (int i = 0; i < scoreRanges.Length && preTestScore >= scoreRanges[i]; i++)
-                        {
-                            initialFunctioningLevel = i;
-                        }
-
-                        for (int i = initialFunctioningLevel; i < scoreRanges.Length && postTestScore >= scoreRanges[i];)
-                        {
-                            finalFunctioningLevel = i++;
-                        }
-
-                        for (int i = initialFunctioningLevel; i < finalFunctioningLevel; i++)
-                        {
-                            List<String> studentLCPs = previouslyReportedLCPs.ContainsKey(studentID) ? previouslyReportedLCPs[studentID] : new List<String>();
-
-                            bool previouslyCalculated = false;
-
-                            if (!studentLCPs.Contains(LCPs[i]))
+                            if (previouslyCalculatedLCP.Item1 == studentID && previouslyCalculatedLCP.Item3 == LCPs[i] &&
+                                (previouslyCalculatedLCP.Item4.getStateReportingYear() == term.getStateReportingYear()
+                                || previouslyCalculatedLCP.Item4.getStateReportingYear() == term.getStateReportingYear().prevReportingYear()))
                             {
-                                Tuple<String, String, OrionTerm> LCP = new Tuple<string, string, OrionTerm>(studentID, LCPs[i], term);
-
-                                foreach (Tuple<String, String, String, OrionTerm> previouslyCalculatedLCP in previouslyCalculatedLCPs)
-                                {
-                                    if (previouslyCalculatedLCP.Item1 == studentID && previouslyCalculatedLCP.Item3 == LCPs[i] &&
-                                        (previouslyCalculatedLCP.Item4.getStateReportingYear() == term.getStateReportingYear()
-                                        || previouslyCalculatedLCP.Item4.getStateReportingYear() == term.getStateReportingYear().prevReportingYear()))
-                                    {
-                                        previouslyCalculated = true;
-                                        break;
-                                    }
-                                }
-
-                                foreach (Tuple<String, String, String, OrionTerm> previouslyCalculatedLCP in calculatedLCPs)
-                                {
-                                    if (previouslyCalculatedLCP.Item1 == studentID && previouslyCalculatedLCP.Item2 == LCPs[i] &&
-                                        (previouslyCalculatedLCP.Item4.getStateReportingYear() == term.getStateReportingYear()
-                                        || previouslyCalculatedLCP.Item4.getStateReportingYear() == term.getStateReportingYear().prevReportingYear()))
-                                    {
-                                        previouslyCalculated = true;
-                                        break;
-                                    }
-                                }
-
-                                if (!previouslyCalculated)
-                                {
-                                    Tuple<String, String, String, OrionTerm> newLCP = new Tuple<string, string, string, OrionTerm>(studentID, "ABE", LCPs[i], term);
-                                    calculatedLCPs.Add(newLCP);
-                                }
+                                previouslyCalculated = true;
+                                break;
                             }
                         }
+
+                        foreach (Tuple<String, String, String, OrionTerm> previouslyCalculatedLCP in calculatedLCPs)
+                        {
+                            if (previouslyCalculatedLCP.Item1 == studentID && previouslyCalculatedLCP.Item2 == LCPs[i] &&
+                                (previouslyCalculatedLCP.Item4.getStateReportingYear() == term.getStateReportingYear()
+                                || previouslyCalculatedLCP.Item4.getStateReportingYear() == term.getStateReportingYear().prevReportingYear()))
+                            {
+                                previouslyCalculated = true;
+                                break;
+                            }
+                        }
+
+                        if (!previouslyCalculated)
+                        {
+                            String LCPType = pretestScore < preLowerBound || pretestScore > preUpperBound || posttestScore < postLowerBound || posttestScore > postUpperBound ? "ABEI" : "ABE";
+
+                            Tuple<String, String, String, OrionTerm> newLCP = new Tuple<string, string, string, OrionTerm>(studentID, LCPType, LCPs[i], term);
+                            calculatedLCPs.Add(newLCP);
+                        }
                     }
-
-                    curPreTestDate = new DateTime();
-                    curPostTestDate = new DateTime();
-                    preTestScore = 0;
-                    postTestScore = 0;
                 }
-
-                if (score > postTestScore && testDate > registrationDate)
-                {
-                    curPostTestDate = testDate;
-                    postTestScore = score;
-                }
-                if (testDate <= registrationDate && score >= testFormRanges[subject + form][0] && score <= testFormRanges[subject + form][1])
-                {
-                    curPreTestDate = testDate;
-                    preTestScore = score;
-                }
-
-                curStudent = studentID;
-                curRefNum = refNum;
-                curCourse = courseID;
-                curSubject = subject;
-
             }
 
             reader.Close();
@@ -566,7 +474,7 @@ namespace LCPCalculator
 
             reader = comm.ExecuteReader();
 
-            curStudent = "";
+            String curStudent = "";
             float curReadingScore = 0;
             float curListeningScore = 0;
 
@@ -689,18 +597,18 @@ namespace LCPCalculator
 
                 if ((testForm == "L" && listeningStudents.Contains(curStudent)) || (testForm == "R" && readingStudents.Contains(curStudent)))
                 {
-                    preTestScore = (int)((testForm == "L") ? preTestListeningScore : preTestReadingScore);
-                    postTestScore = (int)((testForm == "L") ? postTestListeningScore : postTestReadingScore);
+                    int pretestScore = (int)((testForm == "L") ? preTestListeningScore : preTestReadingScore);
+                    int posttestScore = (int)((testForm == "L") ? postTestListeningScore : postTestReadingScore);
 
                     int initialFunctioningLevel = 0;
                     int finalFunctioningLevel = 0;
 
-                    for (int i = 0; i < ESOLLevels.Length && preTestScore > ESOLLevels[i]; i++)
+                    for (int i = 0; i < ESOLLevels.Length && pretestScore > ESOLLevels[i]; i++)
                     {
                         initialFunctioningLevel = i;
                     }
 
-                    for (int i = initialFunctioningLevel; i < ESOLLevels.Length && postTestScore > ESOLLevels[i];)
+                    for (int i = initialFunctioningLevel; i < ESOLLevels.Length && posttestScore > ESOLLevels[i];)
                     {
                         finalFunctioningLevel = i++;
                     }

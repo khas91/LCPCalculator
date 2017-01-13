@@ -11,8 +11,8 @@
   DTS:LocaleID="1033"
   DTS:ObjectName="Package"
   DTS:PackageType="5"
-  DTS:VersionBuild="31"
-  DTS:VersionGUID="{9AC6FBF1-15AD-45EC-B8DA-0B01A1724747}">
+  DTS:VersionBuild="32"
+  DTS:VersionGUID="{0F7D3A34-06AB-435E-8999-AA924D92B75D}">
   <DTS:Property
     DTS:Name="PackageFormatVersion">8</DTS:Property>
   <DTS:ConnectionManagers>
@@ -453,13 +453,13 @@
                           containsID="true"
                           dataType="System.String"
                           description="Derived Column Expression"
-                          name="Expression">(#{Package\Import LCPs to database\Flat File Source.Outputs[Flat File Source Output].Columns[Type]} == "AHS" ? "LS" : (#{Package\Import LCPs to database\Flat File Source.Outputs[Flat File Source Output].Columns[Type]} == "ABE" ? "LA" : "LE"))</property>
+                          name="Expression">(#{Package\Import LCPs to database\Flat File Source.Outputs[Flat File Source Output].Columns[Type]} == "AHS" ? "LS" : ([LEFT](#{Package\Import LCPs to database\Flat File Source.Outputs[Flat File Source Output].Columns[Type]},3) == "ABE" ? "LA" : "LE"))</property>
                         <property
                           containsID="true"
                           dataType="System.String"
                           description="Derived Column Friendly Expression"
                           expressionType="Notify"
-                          name="FriendlyExpression">(Type == "AHS" ? "LS" : (Type == "ABE" ? "LA" : "LE"))</property>
+                          name="FriendlyExpression">(Type == "AHS" ? "LS" : (LEFT(Type,3) == "ABE" ? "LA" : "LE"))</property>
                       </properties>
                     </outputColumn>
                     <outputColumn
