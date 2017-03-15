@@ -11,8 +11,8 @@
   DTS:LocaleID="1033"
   DTS:ObjectName="Package"
   DTS:PackageType="5"
-  DTS:VersionBuild="33"
-  DTS:VersionGUID="{FF0A8BF6-FD7E-486F-A2BC-DEC61ED05094}">
+  DTS:VersionBuild="34"
+  DTS:VersionGUID="{10417EB8-2962-4DC6-9B13-371CAEAE5BE2}">
   <DTS:Property
     DTS:Name="PackageFormatVersion">8</DTS:Property>
   <DTS:ConnectionManagers>
@@ -1117,23 +1117,23 @@
       <GraphLayout
         Capacity="16" xmlns="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph" xmlns:mssgle="clr-namespace:Microsoft.SqlServer.Graph.LayoutEngine;assembly=Microsoft.SqlServer.Graph" xmlns:assembly="http://schemas.microsoft.com/winfx/2006/xaml">
         <NodeLayout
-          Size="147,42"
+          Size="147.2,41.6"
           Id="Package\Calculate LCPs"
           TopLeft="330,193" />
         <NodeLayout
-          Size="195,42"
+          Size="195.2,41.6"
           Id="Package\Import LCPs to database"
           TopLeft="346,270" />
         <NodeLayout
-          Size="205,42"
+          Size="204.8,41.6"
           Id="Package\Run First Half of SDB Build"
           TopLeft="336,110" />
         <NodeLayout
-          Size="219,42"
+          Size="219.2,41.6"
           Id="Package\Run Second Half of SDB Build"
           TopLeft="335,349" />
         <NodeLayout
-          Size="168,42"
+          Size="168,41.6"
           Id="Package\Truncate LCP table"
           TopLeft="332,24" />
         <EdgeLayout
@@ -1269,19 +1269,19 @@
       <GraphLayout
         Capacity="8" xmlns="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph" xmlns:mssgle="clr-namespace:Microsoft.SqlServer.Graph.LayoutEngine;assembly=Microsoft.SqlServer.Graph" xmlns:assembly="http://schemas.microsoft.com/winfx/2006/xaml">
         <NodeLayout
-          Size="151,42"
+          Size="151.2,41.6"
           Id="Package\Import LCPs to database\Flat File Source"
           TopLeft="229,108" />
         <NodeLayout
-          Size="156,42"
+          Size="156,41.6"
           Id="Package\Import LCPs to database\Data Conversion"
           TopLeft="211,253" />
         <NodeLayout
-          Size="171,42"
+          Size="171.2,41.6"
           Id="Package\Import LCPs to database\OLE DB Destination"
           TopLeft="200,326" />
         <NodeLayout
-          Size="154,42"
+          Size="153.6,41.6"
           Id="Package\Import LCPs to database\Derived Column"
           TopLeft="213,193" />
         <EdgeLayout
