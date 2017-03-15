@@ -11,8 +11,8 @@
   DTS:LocaleID="1033"
   DTS:ObjectName="Package"
   DTS:PackageType="5"
-  DTS:VersionBuild="34"
-  DTS:VersionGUID="{10417EB8-2962-4DC6-9B13-371CAEAE5BE2}">
+  DTS:VersionBuild="32"
+  DTS:VersionGUID="{0F7D3A34-06AB-435E-8999-AA924D92B75D}">
   <DTS:Property
     DTS:Name="PackageFormatVersion">8</DTS:Property>
   <DTS:ConnectionManagers>
@@ -1117,51 +1117,51 @@
       <GraphLayout
         Capacity="16" xmlns="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph" xmlns:mssgle="clr-namespace:Microsoft.SqlServer.Graph.LayoutEngine;assembly=Microsoft.SqlServer.Graph" xmlns:assembly="http://schemas.microsoft.com/winfx/2006/xaml">
         <NodeLayout
-          Size="147.2,41.6"
+          Size="147,42"
           Id="Package\Calculate LCPs"
           TopLeft="330,193" />
         <NodeLayout
-          Size="195.2,41.6"
+          Size="195,42"
           Id="Package\Import LCPs to database"
           TopLeft="346,270" />
         <NodeLayout
-          Size="204.8,41.6"
+          Size="205,42"
           Id="Package\Run First Half of SDB Build"
-          TopLeft="336,110" />
+          TopLeft="334,111" />
         <NodeLayout
-          Size="219.2,41.6"
+          Size="219,42"
           Id="Package\Run Second Half of SDB Build"
           TopLeft="335,349" />
         <NodeLayout
-          Size="168,41.6"
+          Size="168,42"
           Id="Package\Truncate LCP table"
           TopLeft="332,24" />
         <EdgeLayout
           Id="Package.PrecedenceConstraints[Constraint]"
-          TopLeft="438.5,152">
+          TopLeft="436.5,153">
           <EdgeLayout.Curve>
             <mssgle:Curve
               StartConnector="{assembly:Null}"
-              EndConnector="-35,41"
+              EndConnector="-33,40"
               Start="0,0"
-              End="-35,33.5">
+              End="-33,32.5">
               <mssgle:Curve.Segments>
                 <mssgle:SegmentCollection
                   Capacity="5">
                   <mssgle:LineSegment
-                    End="0,16.5" />
+                    End="0,16" />
                   <mssgle:CubicBezierSegment
-                    Point1="0,16.5"
-                    Point2="0,20.5"
-                    Point3="-4,20.5" />
+                    Point1="0,16"
+                    Point2="0,20"
+                    Point3="-4,20" />
                   <mssgle:LineSegment
-                    End="-31,20.5" />
+                    End="-29,20" />
                   <mssgle:CubicBezierSegment
-                    Point1="-31,20.5"
-                    Point2="-35,20.5"
-                    Point3="-35,24.5" />
+                    Point1="-29,20"
+                    Point2="-33,20"
+                    Point3="-33,24" />
                   <mssgle:LineSegment
-                    End="-35,33.5" />
+                    End="-33,32.5" />
                 </mssgle:SegmentCollection>
               </mssgle:Curve.Segments>
             </mssgle:Curve>
@@ -1232,26 +1232,26 @@
           <EdgeLayout.Curve>
             <mssgle:Curve
               StartConnector="{assembly:Null}"
-              EndConnector="22.5,44"
+              EndConnector="20.5,45"
               Start="0,0"
-              End="22.5,36.5">
+              End="20.5,37.5">
               <mssgle:Curve.Segments>
                 <mssgle:SegmentCollection
                   Capacity="5">
                   <mssgle:LineSegment
-                    End="0,18" />
+                    End="0,18.5" />
                   <mssgle:CubicBezierSegment
-                    Point1="0,18"
-                    Point2="0,22"
-                    Point3="4,22" />
+                    Point1="0,18.5"
+                    Point2="0,22.5"
+                    Point3="4,22.5" />
                   <mssgle:LineSegment
-                    End="18.5,22" />
+                    End="16.5,22.5" />
                   <mssgle:CubicBezierSegment
-                    Point1="18.5,22"
-                    Point2="22.5,22"
-                    Point3="22.5,26" />
+                    Point1="16.5,22.5"
+                    Point2="20.5,22.5"
+                    Point3="20.5,26.5" />
                   <mssgle:LineSegment
-                    End="22.5,36.5" />
+                    End="20.5,37.5" />
                 </mssgle:SegmentCollection>
               </mssgle:Curve.Segments>
             </mssgle:Curve>
@@ -1269,19 +1269,19 @@
       <GraphLayout
         Capacity="8" xmlns="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph" xmlns:mssgle="clr-namespace:Microsoft.SqlServer.Graph.LayoutEngine;assembly=Microsoft.SqlServer.Graph" xmlns:assembly="http://schemas.microsoft.com/winfx/2006/xaml">
         <NodeLayout
-          Size="151.2,41.6"
+          Size="151,42"
           Id="Package\Import LCPs to database\Flat File Source"
           TopLeft="229,108" />
         <NodeLayout
-          Size="156,41.6"
+          Size="156,42"
           Id="Package\Import LCPs to database\Data Conversion"
           TopLeft="211,253" />
         <NodeLayout
-          Size="171.2,41.6"
+          Size="171,42"
           Id="Package\Import LCPs to database\OLE DB Destination"
           TopLeft="200,326" />
         <NodeLayout
-          Size="153.6,41.6"
+          Size="154,42"
           Id="Package\Import LCPs to database\Derived Column"
           TopLeft="213,193" />
         <EdgeLayout
