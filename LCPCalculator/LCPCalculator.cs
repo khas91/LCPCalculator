@@ -157,52 +157,29 @@ namespace LCPCalculator
 
             reader.Close();
 
-            comm = new SqlCommand(@"SELECT                                                                                                                   
-                                        CASE                                                                                                                 
-                                            WHEN prev.PREV_STDNT_SSN IS NULL THEN r6.DE1021                                                                  
-                                            ELSE stdnt.STUDENT_SSN                                                                                           
-                                        END AS [Student_SSN], r6.DE3008                                                                                      
-                                    FROM                                                                                                                     
-                                        StateSubmission.SDB.RecordType6 r6                                                                                   
-                                        LEFT JOIN MIS.dbo.ST_STDNT_A_PREV_STDNT_SSN_USED_125 prev ON prev.PREV_STDNT_SSN_TY + prev.PREV_STDNT_SSN = r6.DE1021
-                                        LEFT JOIN MIS.dbo.ST_STDNT_A_125 stdnt ON stdnt.[ISN_ST_STDNT_A] = prev.[ISN_ST_STDNT_A]                             
-                                    WHERE                                                                                                                    
-                                        LEFT(r6.DE3008, 3) IN ('AHS','ASE')                                                                                  
-                                        AND r6.DE1028 = '" + term.ToStateReportingTermShort() + @"'                                                           
-                                        AND r6.SubmissionType = 'E'                                                                                          
-                                        AND r6.DE3007 IN ('A','B','C','D','P','S')                                                                           
-                                    ORDER BY                                                                                                                 
-                                        [Student_SSN]", conn);
+            comm = new SqlCommand(@"SELECT
+	                                    class.STDNT_ID, class.CRS_ID, class.REF_NUM, class.GRADE
+                                    FROM
+	                                    MIS.dbo.ST_STDNT_CLS_A_235 class
+	                                    INNER JOIN MIS.dbo.ST_COURSE_A_150 course ON course.CRS_ID = class.CRS_ID
+	                                    INNER JOIN MIS.dbo.UTL_CODE_TABLE_120 code ON code.CODE = class.GRADE
+	                                    INNER JOIN MIS.dbo.UTL_CODE_TABLE_GENERIC_120 gen ON gen.ISN_UTL_CODE_TABLE = code.ISN_UTL_CODE_TABLE
+                                    WHERE
+	                                    class.EFF_TRM = '" + term + @"'
+	                                    AND code.TABLE_NAME = 'GRADE'
+	                                    AND gen.cnxarraycolumn = 8
+	                                    AND code.STATUS = 'A'
+	                                    AND gen.FIELD_VALUE = 'Y'
+	                                    AND course.EFF_TRM <= class.EFF_TRM
+	                                    AND (course.END_TRM >= class.EFF_TRM OR course.END_TRM = '')
+	                                    AND course.ICS_NUM = '13202'", conn);
 
             reader = comm.ExecuteReader();
 
-            if (!reader.HasRows)
-            {
-                reader.Close();
-                comm = new SqlCommand(@"SELECT                                                                                                                    
-                                            CASE                                                                                                                 
-                                                WHEN prev.PREV_STDNT_SSN IS NULL THEN r6.DE1021                                                                  
-                                                ELSE stdnt.STUDENT_SSN                                                                                           
-                                            END AS [Student_SSN], r6.DE3008                                                                                      
-                                        FROM                                                                                                                     
-                                            StateSubmission.SDB.RecordType6 r6                                                                                 
-                                            LEFT JOIN MIS.dbo.ST_STDNT_A_PREV_STDNT_SSN_USED_125 prev ON prev.PREV_STDNT_SSN_TY + prev.PREV_STDNT_SSN = r6.DE1021
-                                            LEFT JOIN MIS.dbo.ST_STDNT_A_125 stdnt ON stdnt.[ISN_ST_STDNT_A] = prev.[ISN_ST_STDNT_A]                             
-                                        WHERE                                                                                                                    
-                                            LEFT(r6.DE3008, 3) IN ('AHS','ASE')                                                                                  
-                                            AND r6.DE3007 IN ('A','B','C','D','P','S')
-                                            AND r6.DE1028 = '" + term.ToStateReportingTermShort() + @"'
-                                            AND r6.SubmissionType = 'E'                                                                           
-                                        ORDER BY                                                                                                                 
-                                            [Student_SSN]", conn);
-
-                reader = comm.ExecuteReader();
-            }
-
             while (reader.Read())
             {
-                String courseID = reader["DE3008"].ToString().Trim();
-                String studentID = reader["Student_SSN"].ToString().Trim();
+                String studentID = reader["STDNT_ID"].ToString();
+                String courseID = reader["CRS_ID"].ToString();
 
                 String[] eligibleLCPs = null;
 
@@ -261,7 +238,6 @@ namespace LCPCalculator
                 }
             }
 
-
             reader.Close();
 
             comm = new SqlCommand(@"SELECT                                                                                                                        
@@ -277,7 +253,7 @@ namespace LCPCalculator
                                          LEFT JOIN MIS.dbo.ST_STDNT_A_125 stdnt ON stdnt.[ISN_ST_STDNT_A] = prev.[ISN_ST_STDNT_A]                             
                                      WHERE                                                                                                                    
                                          xwalk.OrionTerm < '" + term + @"'                                                                                     
-                                         AND xwalk.StateReportingYear NOT IN ('" + term.getStateReportingYear() + "','"
+                                         AND xwalk.StateReportingYear IN ('" + term.getStateReportingYear() + "','"
                                         + term.getStateReportingYear().prevReportingYear() + @"')
                                          AND r5.SubmissionType = 'E'                                                                                          
                                          AND r5.DE2105 <> 'Z'                                                                                                 
@@ -306,56 +282,81 @@ namespace LCPCalculator
 
             reader.Close();
 
-            int[] mathRanges = new int[] { 0, 314, 442, 506, 565 };
+            int[] mathRanges = new int[] { 0, 314, 442, 506, 566 };
             String[] mathLCPs = new String[] { "A", "B", "C", "D" };
-            int[] readingRanges = new int[] { 0, 368, 461, 518, 566 };
+            int[] readingRanges = new int[] { 0, 368, 461, 518, 567 };
             String[] readingLCPs = new String[] { "E", "F", "G", "H" };
-            int[] languageRanges = new int[] { 0, 390, 491, 524, 559 };
+            int[] languageRanges = new int[] { 0, 390, 491, 524, 560 };
             String[] languageLCPs = new String[] { "J", "K", "M", "N" };
 
             Dictionary<String, int[]> testFormRanges = new Dictionary<string, int[]>();
 
-            comm = new SqlCommand(@"SELECT                                                                                                                           
-                                        class.STDNT_ID, class.CRS_ID, class.REF_NUM, xwalk.SUBJECT                                                                 
-	                                    ,pretest.TST_DT AS [Pretest Date], pretest.SCALE_SCORE AS [Pretest Score]                                                  
-                                        ,pretabe.LOWER_RANGE AS [Pretest Lower], pretabe.UPPER_RANGE AS [Pretest Upper], MAX(classlog.LOG_DATE) AS [RegDate]       
-	                                    ,posttest.TST_DT AS [Posttest Date], posttest.SCALE_SCORE AS [Posttest Score],                                             
-                                        posttabe.LOWER_RANGE AS [Posttest Lower], posttabe.UPPER_RANGE AS [Posttest Upper]                                         
-                                    FROM                                                                                                                           
-                                        MIS.[dbo].[ST_STDNT_CLS_A_235] class                                                                                       
-                                        INNER JOIN MIS.[dbo].[ST_STDNT_CLS_LOG_230] classlog ON classlog.REF_NUM = class.REF_NUM                                   
-                                                                                             AND classlog.STDNT_ID = class.STDNT_ID                                
-                                        INNER JOIN Adhoc.[dbo].[Course_Subject_Area_Xwalk] xwalk ON xwalk.CRS_ID = LEFT(class.CRS_ID, 7)                           
-	                                    INNER JOIN MIS.dbo.ST_SUBTEST_A_155 pretest ON pretest.SUBTEST = xwalk.SUBJECT                                             
-                                                                                 AND pretest.STUDENT_ID = class.STDNT_ID                                           
-                                        INNER JOIN MIS.dbo.ST_SUBTEST_A_155 posttest ON posttest.SUBTEST = xwalk.SUBJECT                                           
-                                                                                 AND posttest.STUDENT_ID = class.STDNT_ID                                          
-                                        LEFT JOIN Adhoc.dbo.TABEFormRanges pretabe ON pretabe.Form = LEFT(pretest.TST_FRM, 1)                                      
-                                                                                 AND pretabe.SUBTEST = pretest.SUBTEST                                             
-                                        LEFT JOIN Adhoc.dbo.TABEFormRanges posttabe ON posttabe.Form = LEFT(posttest.TST_FRM, 1)                                   
-                                                                                 AND posttabe.SUBTEST = posttest.SUBTEST                                           
-                                    WHERE                                                                                                                          
-                                        class.EFF_TRM = '" + term + @"'                                                                                             
-	                                    AND classlog.LOG_ACTION = 'A'                                                                                              
-	                                    AND pretest.TST_TY = 'TABE'                                                                                                
-                                        AND pretest.SCALE_SCORE > 0                                                                                                
-                                        AND posttest.TST_TY = 'TABE'                                                                                               
-                                        AND pretest.SCALE_SCORE<posttest.SCALE_SCORE                                                                               
-                                        AND pretest.TST_DT> (SELECT                                                                                                
-                                                                SESS_BEG_DT                                                                                        
-                                                            FROM                                                                                                   
-                                                                MIS.dbo.vwTermYearXwalk xwalk                                                                      
-                                                            WHERE                                                                                                  
-                                                                OrionTerm = '" + term.getStateReportingYear().prevReportingYear().getNthTerm(1).ToOrionTerm() + @"')
-                                    GROUP BY                                                                                                                       
-                                        class.STDNT_ID, class.CRS_ID, class.REF_NUM, xwalk.SUBJECT                                                                 
-	                                    , pretest.TST_DT, pretest.SCALE_SCORE, posttest.TST_DT, posttest.SCALE_SCORE                                               
-	                                    , posttabe.LOWER_RANGE, posttabe.UPPER_RANGE, pretabe.LOWER_RANGE, pretabe.UPPER_RANGE                                     
-                                    HAVING                                                                                                                         
-                                        posttest.TST_DT > MAX(classlog.LOG_DATE)                                                                                   
-                                        AND pretest.TST_DT <= MAX(classlog.LOG_DATE)                                                                               
-                                    ORDER BY                                                                                                                         
-                                        class.STDNT_ID, class.REF_NUM, pretest.TST_DT", conn);
+            comm = new SqlCommand(@"SELECT
+	                                    *
+                                    FROM
+	                                    (
+	                                    SELECT                                                                                                                           
+		                                    class.STDNT_ID
+		                                    ,class.CRS_ID
+		                                    ,class.REF_NUM
+		                                    ,xwalk.SUBJECT                                                                 
+		                                    ,pretest.TST_DT AS [Pretest Date]
+		                                    ,pretest.SCALE_SCORE AS [Pretest Score]                                                  
+		                                    ,pretabe.LOWER_RANGE AS [Pretest Lower]
+		                                    ,pretabe.UPPER_RANGE AS [Pretest Upper]
+		                                    ,MAX(classlog.LOG_DATE) AS [RegDate]       
+		                                    ,posttest.TST_DT AS [Posttest Date]
+		                                    ,posttest.SCALE_SCORE AS [Posttest Score]
+		                                    ,posttabe.LOWER_RANGE AS [Posttest Lower]
+		                                    ,posttabe.UPPER_RANGE AS [Posttest Upper]
+		                                    ,ROW_NUMBER() OVER (PARTITION BY class.STDNT_ID, class.REF_NUM, xwalk.SUBJECT ORDER BY pretest.TST_DT DESC) RN
+		                                    ,ROW_NUMBER() OVER (PARTITION BY class.STDNT_ID, class.REF_NUM, xwalk.SUBJECT ORDER BY posttest.SCALE_SCORE DESC) RN2                              
+	                                    FROM                                                                                                                           
+		                                    MIS.[dbo].[ST_STDNT_CLS_A_235] class                                                                                       
+		                                    INNER JOIN MIS.[dbo].[ST_STDNT_CLS_LOG_230] classlog ON classlog.REF_NUM = class.REF_NUM                                   
+																                                    AND classlog.STDNT_ID = class.STDNT_ID                                
+		                                    INNER JOIN Adhoc.[dbo].[Course_Subject_Area_Xwalk] xwalk ON xwalk.CRS_ID = LEFT(class.CRS_ID, 7)                           
+		                                    INNER JOIN MIS.dbo.ST_SUBTEST_A_155 pretest ON pretest.SUBTEST = xwalk.SUBJECT                                             
+													                                    AND pretest.STUDENT_ID = class.STDNT_ID                                           
+		                                    INNER JOIN MIS.dbo.ST_SUBTEST_A_155 posttest ON posttest.SUBTEST = xwalk.SUBJECT                                           
+													                                    AND posttest.STUDENT_ID = class.STDNT_ID                                          
+		                                    LEFT JOIN Adhoc.dbo.TABEFormRanges pretabe ON pretabe.Form = LEFT(pretest.TST_FRM, 1)                                      
+													                                    AND pretabe.SUBTEST = pretest.SUBTEST                                             
+		                                    LEFT JOIN Adhoc.dbo.TABEFormRanges posttabe ON posttabe.Form = LEFT(posttest.TST_FRM, 1)                                   
+													                                    AND posttabe.SUBTEST = posttest.SUBTEST                                           
+	                                    WHERE                                                                                                                          
+		                                    class.EFF_TRM = '" + term + @"'                                                                                             
+		                                    AND classlog.LOG_ACTION = 'A'                                                                                              
+		                                    AND pretest.TST_TY = 'TABE'                                                                                                
+		                                    AND pretest.SCALE_SCORE > 0                                                                                                
+		                                    AND posttest.TST_TY = 'TABE'                                                                                               
+		                                    AND pretest.SCALE_SCORE<posttest.SCALE_SCORE                                                                               
+		                                    AND pretest.TST_DT > (SELECT                                                                                                
+								                                    SESS_BEG_DT                                                                                        
+							                                    FROM                                                                                                   
+								                                    MIS.dbo.vwTermYearXwalk xwalk                                                                      
+							                                    WHERE                                                                                                  
+								                                    OrionTerm = '" + term.getStateReportingYear().prevReportingYear().getNthTerm(1).ToOrionTerm() + @"')
+	                                    GROUP BY                                                                                                                       
+		                                    class.STDNT_ID
+		                                    ,class.CRS_ID
+		                                    ,class.REF_NUM
+		                                    ,xwalk.SUBJECT                                                                 
+		                                    ,pretest.TST_DT
+		                                    ,pretest.SCALE_SCORE
+		                                    ,posttest.TST_DT
+		                                    ,posttest.SCALE_SCORE                                               
+		                                    ,posttabe.LOWER_RANGE
+		                                    ,posttabe.UPPER_RANGE
+		                                    ,pretabe.LOWER_RANGE
+		                                    ,pretabe.UPPER_RANGE                                     
+	                                    HAVING                                                                                                                         
+		                                    posttest.TST_DT > MAX(classlog.LOG_DATE)                                                                                   
+		                                    AND pretest.TST_DT <= MAX(classlog.LOG_DATE)                                                                               
+	                                    ) SRC
+                                    WHERE
+	                                    SRC.RN = 1
+	                                    AND SRC.RN2 = 1", conn);
 
             reader = comm.ExecuteReader();
             
@@ -470,7 +471,7 @@ namespace LCPCalculator
                                         WHERE                                                                                    
                                             test.TST_TY = 'CASA'                                                                 
                                             AND test.TST_SCR > 0                                                                 
-                                            AND RIGHT(test.TST_FRM, 1) IN('R', 'L')) SRC                                         
+                                            AND RIGHT(test.TST_FRM, 1) IN ('R', 'L')) SRC                                         
                                     WHERE                                                                                        
                                         RN = 1                                                                                   
                                     ORDER BY                                                                                     
@@ -530,8 +531,8 @@ namespace LCPCalculator
 		                                    ,class.REF_NUM
 		                                    ,class.CRS_ID
 		                                    ,MAX(classlog.LOG_DATE) AS [RegDate]
-		                                    ,ROW_NUMBER() OVER (PARTITION BY class.STDNT_ID, class.REF_NUM ORDER BY pretest.TST_DT DESC) RN
-		                                    ,ROW_NUMBER() OVER (PARTITION BY class.STDNT_ID, class.REF_NUM ORDER BY posttest.TST_DT ASC) RN2
+		                                    ,ROW_NUMBER() OVER (PARTITION BY class.STDNT_ID, class.REF_NUM ORDER BY pretest.TST_DT ASC) RN
+		                                    ,ROW_NUMBER() OVER (PARTITION BY class.STDNT_ID, class.REF_NUM ORDER BY posttest.TST_SCR DESC) RN2
 		                                    ,pretest.TST_DT AS [Pretest Date]
 		                                    ,pretest.TST_SCR AS [Pretest Score]
 		                                    ,RIGHT(pretest.TST_FRM,1) AS [Pretest Form]
@@ -654,7 +655,13 @@ namespace LCPCalculator
                             {
                                 Tuple<String, String, String, OrionTerm> newLCP = new Tuple<string, string, string, OrionTerm>(curStudent, "LE", ESOLLCPs[i], term);
                                 calculatedLCPs.Add(newLCP);
+                                studentLCPs.Add(ESOLLCPs[i]);
                             }
+                        }
+
+                        if (!previouslyReportedLCPs.ContainsKey(curStudent))
+                        {
+                            previouslyReportedLCPs.Add(curStudent, studentLCPs);
                         }
                     }
                 }
