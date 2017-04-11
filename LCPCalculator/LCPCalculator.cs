@@ -122,20 +122,20 @@ namespace LCPCalculator
 
             comm = new SqlCommand(@"SELECT                                                                                                                    
                                         CASE                                                                                                                  
-                                            WHEN prev.PREV_STDNT_SSN IS NULL THEN r5.DE1021                                                                   
-                                            ELSE stdnt.STUDENT_SSN                                                                                            
-                                        END AS [Student_SSN]                                                                                                  
-                                         ,OrionTerm,DE2105                                                                                                    
-                                     FROM                                                                                                                     
-                                         StateSubmission.SDB.recordType5 r5                                                                                   
-                                         INNER JOIN MIS.dbo.vwTermYearXwalk xwalk ON xwalk.StateReportingTerm = r5.DE1028                                     
+                                            WHEN prev.PREV_STDNT_SSN IS NULL THEN r5.DE1021
+                                            ELSE stdnt.STUDENT_SSN
+                                        END AS [Student_SSN]
+                                         ,OrionTerm,DE2105
+                                     FROM
+                                         StateSubmission.SDB.recordType5 r5
+                                         INNER JOIN MIS.dbo.vwTermYearXwalk xwalk ON xwalk.StateReportingTerm = r5.DE1028
                                          LEFT JOIN MIS.dbo.ST_STDNT_A_PREV_STDNT_SSN_USED_125 prev ON prev.PREV_STDNT_SSN_TY + prev.PREV_STDNT_SSN = r5.DE1021
-                                         LEFT JOIN MIS.dbo.ST_STDNT_A_125 stdnt ON stdnt.[ISN_ST_STDNT_A] = prev.[ISN_ST_STDNT_A]                             
-                                     WHERE                                                                                                                    
-                                         xwalk.OrionTerm < '" + term + @"'                                                                                     
-                                         AND r5.SubmissionType = 'E'                                                                                          
-                                         AND r5.DE2105 <> 'Z'                                                                                                 
-                                     ORDER BY                                                                                                                 
+                                         LEFT JOIN MIS.dbo.ST_STDNT_A_125 stdnt ON stdnt.[ISN_ST_STDNT_A] = prev.[ISN_ST_STDNT_A]
+                                     WHERE
+                                         xwalk.OrionTerm < '" + term + @"'
+                                         AND r5.SubmissionType = 'E'
+                                         AND r5.DE2105 <> 'Z'
+                                     ORDER BY
                                          [Student_SSN]", conn);
 
             reader = comm.ExecuteReader();
