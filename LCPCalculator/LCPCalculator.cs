@@ -780,4 +780,43 @@ namespace LCPCalculator
             return calculatedLCPs;
         }
     }
+
+    public class EducationalFunctioningLevel
+    {
+        public float lowerBound { get; set; }
+        public float upperBound { get; set; }
+        
+        
+    }
+
+    public class Test
+    {
+        public String type { get; set; }
+        public String subject { get; set; }
+        public DateTime testDate { get; set; }
+        public float score { get; set; }
+        
+    }
+
+    public class Course
+    {
+        public EducationalFunctioningLevel EFL { get; set; }
+        public String courseID { get; set; }
+        public String subject { get; set; }
+        public DateTime registrationDate { get; set; }
+        public DateTime lastAttDate { get; set; }
+
+    }
+
+    public class Student
+    {
+        public String studentID { get; set; }
+        public List<Test> tests { get; set; }
+        public List<Course> courses { get; set; }
+
+        public List<Test> getTestsForDateRange(DateTime from, DateTime to)
+        {
+            return tests.Where(test => test.testDate >= from && test.testDate <= to).ToList();
+        }
+    }
 }
