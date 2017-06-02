@@ -7,12 +7,12 @@
   DTS:CreatorName="FSCJ\spierson"
   DTS:DTSID="{B9CEAF74-B3CD-4536-B01E-C4EC937680C4}"
   DTS:ExecutableType="Microsoft.Package"
-  DTS:LastModifiedProductVersion="13.0.2165.0"
+  DTS:LastModifiedProductVersion="14.0.0500.272"
   DTS:LocaleID="1033"
   DTS:ObjectName="Package"
   DTS:PackageType="5"
-  DTS:VersionBuild="35"
-  DTS:VersionGUID="{87181AB2-E661-4645-994A-70F100DD1B84}">
+  DTS:VersionBuild="36"
+  DTS:VersionGUID="{CF04DD72-2B50-4E81-85CE-A4203AB61DF1}">
   <DTS:Property
     DTS:Name="PackageFormatVersion">8</DTS:Property>
   <DTS:ConnectionManagers>
@@ -120,9 +120,9 @@
         DTS:Name="Arguments">"-m " + @[User::term] + " -x " +  @[User::term]</DTS:PropertyExpression>
       <DTS:ObjectData>
         <ExecuteProcessData
-          Executable="Z:\Stuart\ConsoleApplications\LCPCalculator\LCPCalculator\bin\Debug\LCPCalculator.exe"
+          Executable="Z:\Stuart\Git Repos\LCPCalculator\Redux\bin\Debug\Redux.exe"
           Arguments="-m 20171 -x 20171"
-          WorkingDirectory="Z:\Stuart\ConsoleApplications\LCPCalculator\LCPCalculator\bin\Debug" />
+          WorkingDirectory="Z:\Stuart\Git Repos\LCPCalculator\Redux\bin\Debug" />
       </DTS:ObjectData>
     </DTS:Executable>
     <DTS:Executable
@@ -738,7 +738,7 @@
                   dataType="System.String"
                   description="The SQL command to be executed."
                   name="SqlCommand"
-                  UITypeEditor="Microsoft.DataTransformationServices.Controls.ModalMultilineStringEditor"></property>
+                  UITypeEditor="Microsoft.DataTransformationServices.Controls.ModalMultilineStringEditor, Microsoft.DataTransformationServices.Controls, Version=14.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91"></property>
                 <property
                   dataType="System.Int32"
                   description="Specifies the column code page to use when code page information is unavailable from the data source."
