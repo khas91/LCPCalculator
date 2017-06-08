@@ -21,7 +21,7 @@ namespace Redux
             Dictionary<String, String> ESOLstudentCurrentContinuousEnrollmentPeriodStartTerm = new Dictionary<string, string>();
             Dictionary<String, String> ABEstudentCurrentContinuousEnrollmentPeriodStartTerm = new Dictionary<string, string>();
             Dictionary<String, List<Tuple<String, String>>> studentLCPs = new Dictionary<string, List<Tuple<string, string>>>();
-            Dictionary<String, List<Tuple<String, String>>> newLCPs = new Dictionary<string, List<Tuple<string, string>>>();
+            Dictionary<String, List<Tuple<String, String, DateTime>>> newLCPs = new Dictionary<string, List<Tuple<string, string, DateTime>>>();
             Dictionary<String, String> ESOLstudentReadingorListeningDesignations = new Dictionary<string, string>();
             Dictionary<String, String[]> AHSLCPDictionary = new Dictionary<string, string[]>();
             List<String> AHSCoursePrefixes = new List<string>();
@@ -549,7 +549,7 @@ namespace Redux
 
                     if (!newLCPs.ContainsKey(studentID))
                     {
-                        newLCPs.Add(studentID, new List<Tuple<string, string>>());
+                        newLCPs.Add(studentID, new List<Tuple<string, string, DateTime>>());
                     }
 
                     Course[] courses = student.getCoursesInOrder("ESOL");
@@ -590,11 +590,11 @@ namespace Redux
 
                         for (int j = initialFunctioningLevel; j < esolEFLs.Length && postTestScore > esolEFLs[j].upperBound; j++)
                         {
-                            Tuple<String, String> LCP = new Tuple<string, string>("1532010300", esolLCPs[j]);
+                            Tuple<String, String, DateTime> LCP = new Tuple<string, string, DateTime>("1532010300", esolLCPs[j], postTests.Last().testDate);
 
                             if (!studentLCPs[studentID].Any(prev => prev.Equals(LCP)))
                             {
-                                studentLCPs[studentID].Add(LCP);
+                                studentLCPs[studentID].Add(new Tuple<String, String>(LCP.Item1, LCP.Item2));
                                 newLCPs[studentID].Add(LCP);
                             }
                         }
@@ -905,7 +905,7 @@ namespace Redux
 
                         if (!newLCPs.ContainsKey(studentID))
                         {
-                            newLCPs.Add(studentID, new List<Tuple<string, string>>());
+                            newLCPs.Add(studentID, new List<Tuple<string, string, DateTime>>());
                         }
 
                         Course[] courses = student.getCoursesInOrder("ABE", subject);
@@ -946,11 +946,11 @@ namespace Redux
 
                             for (int j = initialFunctioningLevel; j < abeEFLs.Length && postTestScore > abeEFLs[j].upperBound; j++)
                             {
-                                Tuple<String, String> LCP = new Tuple<string, string>("1532010200", abeLCPs[j]);
+                                Tuple<String, String, DateTime> LCP = new Tuple<string, string, DateTime>("1532010200", abeLCPs[j], postTests.Last().testDate);
 
                                 if (!studentLCPs[studentID].Any(prev => prev.Equals(LCP)))
                                 {
-                                    studentLCPs[studentID].Add(LCP);
+                                    studentLCPs[studentID].Add(new Tuple<String, String>(LCP.Item1, LCP.Item2));
                                     newLCPs[studentID].Add(LCP);
                                 }
                             }
@@ -1047,7 +1047,7 @@ namespace Redux
 
                     if (!newLCPs.ContainsKey(studentID))
                     {
-                        newLCPs.Add(studentID, new List<Tuple<string, string>>());
+                        newLCPs.Add(studentID, new List<Tuple<string, string, DateTime>>());
                     }
 
                     foreach (String prefix in AHSCoursePrefixes)
@@ -1061,11 +1061,11 @@ namespace Redux
                                     continue;
                                 }
 
-                                Tuple<String, String> LCP = new Tuple<string, string>("1532010202", AHSLCPDictionary[prefix][i]);
+                                Tuple<String, String, DateTime> LCP = new Tuple<string, string, DateTime>("1532010202", AHSLCPDictionary[prefix][i], new DateTime());
 
                                 if (!studentLCPs[studentID].Any(prev => prev.Equals(LCP)))
                                 {
-                                    studentLCPs[studentID].Add(LCP);
+                                    studentLCPs[studentID].Add(new Tuple<string, string>(LCP.Item1, LCP.Item2));
                                     newLCPs[studentID].Add(LCP);
                                     break;
                                 }
@@ -1114,12 +1114,12 @@ namespace Redux
 
                     if (!newLCPs.ContainsKey(studentID))
                     {
-                        newLCPs.Add(studentID, new List<Tuple<string, string>>());
+                        newLCPs.Add(studentID, new List<Tuple<string, string, DateTime>>());
                     }
 
-                    Tuple<String, String> LCP = new Tuple<string, string>("1533010200", lcpval);
+                    Tuple<String, String, DateTime> LCP = new Tuple<string, string, DateTime>("1533010200", lcpval, new DateTime());
 
-                    studentLCPs[studentID].Add(LCP);
+                    studentLCPs[studentID].Add(new Tuple<string, string>(LCP.Item1, LCP.Item2));
                     newLCPs[studentID].Add(LCP);
                 }
 
@@ -1135,9 +1135,9 @@ namespace Redux
 
                 foreach (String studentID in newLCPs.Keys.ToList())
                 {
-                    foreach (Tuple<String, String> LCP in newLCPs[studentID])
+                    foreach (Tuple<String, String, DateTime> LCP in newLCPs[studentID])
                     {
-                        output.WriteLine(String.Join(",", studentID, LCP.Item1, LCP.Item2));
+                        output.WriteLine(String.Join(",", studentID, LCP.Item1, LCP.Item2, LCP.Item3));
                     }
                 }
             }
