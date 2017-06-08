@@ -948,7 +948,7 @@ namespace Redux
                             {
                                 Tuple<String, String, DateTime> LCP = new Tuple<string, string, DateTime>("1532010200", abeLCPs[j], postTests.Last().testDate);
 
-                                if (!studentLCPs[studentID].Any(prev => prev.Equals(LCP)))
+                                if (!studentLCPs[studentID].Any(prev => prev.Item1 == LCP.Item1 && prev.Item2 == LCP.Item2))
                                 {
                                     studentLCPs[studentID].Add(new Tuple<String, String>(LCP.Item1, LCP.Item2));
                                     newLCPs[studentID].Add(LCP);
@@ -1019,8 +1019,8 @@ namespace Redux
 
                 reader.Close();
 
-                comm = new SqlCommand(@"SELECT
-	                                        class.STDNT_ID, class.CRS_ID
+                comm = new SqlCommand(@"SELECT DISTINCT
+	                                        class.STDNT_ID, class.CRS_ID, CONVERT(DATE, class.GRD_DT) AS [Grade Date]
                                         FROM
 	                                        MIS.dbo.ST_STDNT_CLS_A_235 class
 	                                        INNER JOIN MIS.dbo.ST_COURSE_A_150 course ON course.CRS_ID = class.CRS_ID
@@ -1039,6 +1039,7 @@ namespace Redux
                 {
                     String studentID = reader["STDNT_ID"].ToString();
                     String courseID = reader["CRS_ID"].ToString();
+                    DateTime gradeDate = DateTime.Parse(reader["Grade Date"].ToString());
 
                     if (!studentLCPs.ContainsKey(studentID))
                     {
@@ -1061,9 +1062,9 @@ namespace Redux
                                     continue;
                                 }
 
-                                Tuple<String, String, DateTime> LCP = new Tuple<string, string, DateTime>("1532010202", AHSLCPDictionary[prefix][i], new DateTime());
+                                Tuple<String, String, DateTime> LCP = new Tuple<string, string, DateTime>("1532010202", AHSLCPDictionary[prefix][i], gradeDate);
 
-                                if (!studentLCPs[studentID].Any(prev => prev.Equals(LCP)))
+                                if (!studentLCPs[studentID].Any(prev => prev.Item1 == LCP.Item1 && prev.Item2 == LCP.Item2))
                                 {
                                     studentLCPs[studentID].Add(new Tuple<string, string>(LCP.Item1, LCP.Item2));
                                     newLCPs[studentID].Add(LCP);
@@ -1079,6 +1080,7 @@ namespace Redux
                 comm = new SqlCommand(@"SELECT DISTINCT
 	                                        class.STDNT_ID
 	                                        ,lcp.COMP_POINT_ID
+                                            ,CONVERT(DATE, class.GRD_DT) AS [Grade Date]
                                         FROM	
 	                                        MIS.dbo.ST_OCP_LCP_A_55 lcp
 	                                        INNER JOIN MIS.dbo.ST_STDNT_CLS_A_235 class ON class.CRS_ID = lcp.CRS_ID
@@ -1106,6 +1108,7 @@ namespace Redux
                 {
                     String studentID = reader["STDNT_ID"].ToString();
                     String lcpval = reader["COMP_POINT_ID"].ToString();
+                    DateTime gradeDate = DateTime.Parse(reader["Grade Date"].ToString());
 
                     if (!studentLCPs.ContainsKey(studentID))
                     {
@@ -1117,7 +1120,7 @@ namespace Redux
                         newLCPs.Add(studentID, new List<Tuple<string, string, DateTime>>());
                     }
 
-                    Tuple<String, String, DateTime> LCP = new Tuple<string, string, DateTime>("1533010200", lcpval, new DateTime());
+                    Tuple<String, String, DateTime> LCP = new Tuple<string, string, DateTime>("1533010200", lcpval, gradeDate);
 
                     studentLCPs[studentID].Add(new Tuple<string, string>(LCP.Item1, LCP.Item2));
                     newLCPs[studentID].Add(LCP);
@@ -1131,7 +1134,7 @@ namespace Redux
 
             using (StreamWriter output = new StreamWriter("LCPs.csv"))
             {
-                output.WriteLine("STDNT_ID,CIP_CD,LCP");
+                output.WriteLine("STDNT_ID,CIP_CD,LCP,Completion Date");
 
                 foreach (String studentID in newLCPs.Keys.ToList())
                 {
