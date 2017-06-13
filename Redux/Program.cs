@@ -485,6 +485,7 @@ namespace Redux
 	                                        AND xwalk.OrionTerm >= stuterm.Term
 	                                        AND r5.DE2101 = '1532010300'
                                             AND xwalk.OrionTerm < '" + term + @"'
+                                            AND r5.SubmissionType <> 'LE'
                                         ORDER BY
 	                                        stuterm.STDNT_ID
 	                                        ,xwalk.OrionTerm", conn);
@@ -1072,6 +1073,7 @@ namespace Redux
                                 }
                             }
                         }
+                        break;
                     }
                 }
 
