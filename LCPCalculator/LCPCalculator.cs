@@ -1,810 +1,1182 @@
-﻿using CommandLine;
-using CommandLine.Text;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.SqlClient;
+using System.IO;
 using System.Linq;
 using System.Text;
-using System.IO;
 using System.Threading.Tasks;
 using TermLogic;
-using System.Globalization;
 
-namespace LCPCalculator
+namespace Redux
 {
-    class Options
+    class Program
     {
-        [Option('m', "MinTerm", Required = true)]
-        public String min_term { get; set; }
-        [Option('x', "MaxTerm", Required = true)]
-        public String max_term { get; set; }
-        [ParserState]
-        public IParserState LastParserState { get; set; }
-        [HelpOption]
-        public string GetUsage()
+        static void Main(string[] args)
         {
-            return HelpText.AutoBuild(this,
-              (HelpText current) => HelpText.DefaultParsingErrorsHandler(this, current));
-        }
-    }
 
-    class LCPCalculator
-    {
-        static int Main(string[] args)
-        {
-            Options options = new Options();
+            Dictionary<String, Student> studentDictionary = new Dictionary<string, Student>();
+            List<String> ESOLStudentIDs = new List<String>();
+            List<String> ABEStudentIDs = new List<string>();
+            Dictionary<String, String> ESOLstudentCurrentContinuousEnrollmentPeriodStartTerm = new Dictionary<string, string>();
+            Dictionary<String, String> ABEstudentCurrentContinuousEnrollmentPeriodStartTerm = new Dictionary<string, string>();
+            Dictionary<String, List<Tuple<String, String>>> studentLCPs = new Dictionary<string, List<Tuple<string, string>>>();
+            Dictionary<String, List<Tuple<String, String, DateTime>>> newLCPs = new Dictionary<string, List<Tuple<string, string, DateTime>>>();
+            Dictionary<String, String> ESOLstudentReadingorListeningDesignations = new Dictionary<string, string>();
+            Dictionary<String, String[]> AHSLCPDictionary = new Dictionary<string, string[]>();
+            List<String> AHSCoursePrefixes = new List<string>();
 
-            if (!CommandLine.Parser.Default.ParseArguments(args, options))
+            EducationalFunctioningLevel[] abeEFLs = new EducationalFunctioningLevel[4];
+
+
+            for (OrionTerm term = new OrionTerm("20172"); term <= new OrionTerm("20172"); term++)
             {
-                return -1;
-            }
 
-            List<Tuple<String, String, String, OrionTerm>> previouslyCalculatedLCPs = new List<Tuple<string, string, string, OrionTerm>>();
-            OrionTerm i = new OrionTerm(options.min_term);
-            OrionTerm max_term = new OrionTerm(options.max_term);
 
-            while (i <= max_term)
-            {
-                previouslyCalculatedLCPs = previouslyCalculatedLCPs.Concat(calculateLCPsForTerm(i, previouslyCalculatedLCPs)).ToList();
-                i++;
-            }
-
-            StreamWriter file = new StreamWriter("..\\..\\..\\LCPs.csv");
-
-            file.WriteLine("StudentID,Type,COMP_POINT_ID,Term");
-
-            foreach (Tuple<String, String, String, OrionTerm> LCP in previouslyCalculatedLCPs)
-            {
-                file.WriteLine(@"""" + LCP.Item1 + @"""," + LCP.Item2 + "," + LCP.Item3 + "," + LCP.Item4);
-            }
-
-            file.Close();
-
-            return 0;
-
-        }
-
-        public static List<Tuple<String, String, String, OrionTerm>> calculateLCPsForTerm(OrionTerm term, List<Tuple<String, String, String, OrionTerm>> previouslyCalculatedLCPs)
-        {
-            SqlConnection conn = new SqlConnection("server=vulcan;Trusted_Connection=true;database=StateSubmission");
-            SqlCommand comm;
-            SqlDataReader reader;
-
-            Dictionary<String, String[]> LCPDictionary = new Dictionary<string, string[]>();
-            Dictionary<String, List<String>> previouslyReportedLCPs = new Dictionary<string, List<String>>();
-            List<Tuple<String, String, String, OrionTerm>> calculatedLCPs = new List<Tuple<string, string, string, OrionTerm>>();
-            List<String> coursePrefixes = new List<string>();
-            List<String> listeningStudents = new List<string>();
-            List<String> readingStudents = new List<string>();
-
-            try
-            {
-                conn.Open();
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-
-            comm = new SqlCommand(@"SELECT                                                    
-                                       CRS_ID, COMP_POINT_ID, COMP_POINT_SEQ                  
-                                   FROM                                                       
-                                       MIS.dbo.ST_OCP_LCP_A_55 lcp                            
-                                   WHERE                                                      
-                                       lcp.COMP_POINT_TY = 'LS'                               
-                                       AND lcp.EFF_TRM <= '" + term + @"'                      
-                                       AND (lcp.END_TRM = '' OR lcp.END_TRM >= '" + term + @"')
-                                   ORDER BY                                                   
-                                       lcp.CRS_ID, lcp.COMP_POINT_SEQ DESC", conn);
-
-            reader = comm.ExecuteReader();
-
-            while (reader.Read())
-            {
-                String coursePrefix = reader["CRS_ID"].ToString().Replace("*", "");
-                String lcpValue = reader["COMP_POINT_ID"].ToString();
-                int priority = int.Parse(reader["COMP_POINT_SEQ"].ToString());
-
-                if (!LCPDictionary.ContainsKey(coursePrefix))
+                for (int i = 0; i < 4; i++)
                 {
-                    LCPDictionary.Add(coursePrefix, new String[priority]);
+                    abeEFLs[i] = new EducationalFunctioningLevel();
                 }
 
-                if (!coursePrefixes.Contains(coursePrefix))
+                abeEFLs[0].lowerBound = 0;
+                abeEFLs[0].upperBound = 1.9f;
+                abeEFLs[1].lowerBound = 2.0f;
+                abeEFLs[1].upperBound = 3.9f;
+                abeEFLs[2].lowerBound = 4.0f;
+                abeEFLs[2].upperBound = 5.9f;
+                abeEFLs[3].lowerBound = 6.0f;
+                abeEFLs[3].upperBound = 8.9f;
+
+                EducationalFunctioningLevel[] esolEFLs = new EducationalFunctioningLevel[6];
+
+                for (int i = 0; i < 6; i++)
                 {
-                    coursePrefixes.Add(coursePrefix);
+                    esolEFLs[i] = new EducationalFunctioningLevel();
                 }
 
-                LCPDictionary[coursePrefix][priority - 1] = lcpValue;
-            }
+                esolEFLs[0].lowerBound = 0;
+                esolEFLs[0].upperBound = 179;
+                esolEFLs[1].lowerBound = 180;
+                esolEFLs[1].upperBound = 190;
+                esolEFLs[2].lowerBound = 191;
+                esolEFLs[2].upperBound = 200;
+                esolEFLs[3].lowerBound = 201;
+                esolEFLs[3].upperBound = 210;
+                esolEFLs[4].lowerBound = 211;
+                esolEFLs[4].upperBound = 220;
+                esolEFLs[5].lowerBound = 221;
+                esolEFLs[5].upperBound = 235;
 
-            reader.Close();
+                String[] esolLCPs = { "A", "B", "C", "D", "E", "F" };
+                String[] abeMathLCPs = { "A", "B", "C", "D" };
+                String[] abeReadingLCPs = { "E", "F", "G", "H" };
+                String[] abeLanguageLCPs = { "J", "K", "M", "N" };
 
-            comm = new SqlCommand(@"SELECT                                                                                                                    
-                                        CASE                                                                                                                  
-                                            WHEN prev.PREV_STDNT_SSN IS NULL THEN r5.DE1021
-                                            ELSE stdnt.STUDENT_SSN
-                                        END AS [Student_SSN]
-                                         ,OrionTerm,DE2105
-                                     FROM
-                                         StateSubmission.SDB.recordType5 r5
-                                         INNER JOIN MIS.dbo.vwTermYearXwalk xwalk ON xwalk.StateReportingTerm = r5.DE1028
-                                         LEFT JOIN MIS.dbo.ST_STDNT_A_PREV_STDNT_SSN_USED_125 prev ON prev.PREV_STDNT_SSN_TY + prev.PREV_STDNT_SSN = r5.DE1021
-                                         LEFT JOIN MIS.dbo.ST_STDNT_A_125 stdnt ON stdnt.[ISN_ST_STDNT_A] = prev.[ISN_ST_STDNT_A]
-                                     WHERE
-                                         xwalk.OrionTerm < '" + term + @"'
-                                         AND r5.SubmissionType = 'E'
-                                         AND r5.DE2105 <> 'Z'
-                                     ORDER BY
-                                         [Student_SSN]", conn);
+                SqlConnection conn = new SqlConnection("server=vulcan;Trusted_Connection=true;database=StateSubmission");
+                SqlCommand comm;
+                SqlDataReader reader;
 
-            reader = comm.ExecuteReader();
-
-            while (reader.Read())
-            {
-                String studentID = reader["Student_SSN"].ToString().Trim();
-                String LCP = reader["DE2105"].ToString().Trim();
-
-                OrionTerm LCPterm = new OrionTerm(reader["OrionTerm"].ToString());
-
-                if (!previouslyReportedLCPs.ContainsKey(studentID))
+                try
                 {
-                    previouslyReportedLCPs.Add(studentID, new List<string>());
+                    conn.Open();
+                }
+                catch (Exception)
+                {
+                    throw;
                 }
 
-                previouslyReportedLCPs[studentID].Add(LCP);
-            }
+                comm = new SqlCommand(@"SELECT TOP 2
+	                                        CONVERT(DATE, SESS_BEG_DT) AS [TermBeginDate]
+	                                        ,CONVERT(DATE, SESS_END_DT) AS [TermEndDate]
+                                        FROM
+	                                        MIS.dbo.vwTermYearXwalk xwalk
+                                        WHERE
+	                                        xwalk.OrionTerm >= '" + term + "'", conn);
 
-            reader.Close();
+                reader = comm.ExecuteReader();
+                reader.Read();
 
-            comm = new SqlCommand(@"SELECT
-	                                    class.STDNT_ID, class.CRS_ID, class.REF_NUM, class.GRADE
+                DateTime termBeginDate = DateTime.Parse(reader["TermBeginDate"].ToString());
+                DateTime termEndDate = DateTime.Parse(reader["TermEndDate"].ToString());
+
+                reader.Read();
+
+                DateTime nextTermStartDate = DateTime.Parse(reader["TermBeginDate"].ToString());
+
+                reader.Close();
+
+                comm = new SqlCommand(@"SELECT
+	                                    class.STDNT_ID
+	                                    ,class.CRS_ID
+	                                    ,class.EFF_TRM
+	                                    ,class.REF_NUM
+	                                    ,CONVERT(DATE, CAST(MAX(log.LOG_DATE) AS VARCHAR(MAX))) AS [Registration Date]
+	                                    ,CASE
+		                                    WHEN ISDATE(class.ATT_DATE) > 0 THEN CONVERT(DATE, class.ATT_DATE)
+	                                    END AS [Last Attendance Date]
+	                                    ,CASE
+		                                    WHEN af.INITIAL_FUNCTIONING_LEVEL IS NOT NULL THEN af.INITIAL_FUNCTIONING_LEVEL
+	                                    END AS [Initial Functioning Level]
+                                    INTO
+	                                    #ESOLEnrollments
                                     FROM
 	                                    MIS.dbo.ST_STDNT_CLS_A_235 class
 	                                    INNER JOIN MIS.dbo.ST_COURSE_A_150 course ON course.CRS_ID = class.CRS_ID
-	                                    INNER JOIN MIS.dbo.UTL_CODE_TABLE_120 code ON code.CODE = class.GRADE
-	                                    INNER JOIN MIS.dbo.UTL_CODE_TABLE_GENERIC_120 gen ON gen.ISN_UTL_CODE_TABLE = code.ISN_UTL_CODE_TABLE
+												                                    AND course.EFF_TRM <= class.EFF_TRM
+												                                    AND (course.END_TRM = '' OR course.END_TRM >= class.EFF_TRM)
+	                                    INNER JOIN MIS.dbo.ST_STDNT_CLS_LOG_230 log ON log.REF_NUM = class.REF_NUM
+												                                    AND log.STDNT_ID = class.STDNT_ID
+	                                    LEFT JOIN MIS.dbo.ST_OCP_LCP_A_55 af ON af.CRS_ID = class.CRS_ID
+											                                    AND af.COMP_POINT_TY = 'AF'
+											                                    AND (af.END_TRM = '' OR af.END_TRM >= class.EFF_TRM)
+											                                    AND af.EFF_TRM <= class.EFF_TRM
                                     WHERE
-	                                    class.EFF_TRM = '" + term + @"'
-	                                    AND code.TABLE_NAME = 'GRADE'
-	                                    AND gen.cnxarraycolumn = 8
-	                                    AND code.STATUS = 'A'
-	                                    AND gen.FIELD_VALUE = 'Y'
-	                                    AND course.EFF_TRM <= class.EFF_TRM
-	                                    AND (course.END_TRM >= class.EFF_TRM OR course.END_TRM = '')
-	                                    AND course.ICS_NUM = '13202'", conn);
+	                                    course.ICS_NUM = '13204' 
+                                        AND af.INITIAL_FUNCTIONING_LEVEL NOT IN ('H', 'K', 'L', 'M', 'X')
+	                                    AND log.LOG_ACTION = 'A'
+	                                    AND class.TRNSCTN_TY = 'A'
+                                    GROUP BY
+	                                    class.STDNT_ID
+	                                    ,class.CRS_ID
+	                                    ,class.REF_NUM
+	                                    ,class.ATT_DATE
+	                                    ,class.EFF_TRM
+	                                    ,af.INITIAL_FUNCTIONING_LEVEL
+	                                    ,class.GRD_DT
 
-            reader = comm.ExecuteReader();
+                                    SELECT
+	                                    *
+                                    FROM
+	                                    #ESOLEnrollments", conn);
 
-            while (reader.Read())
-            {
-                String studentID = reader["STDNT_ID"].ToString();
-                String courseID = reader["CRS_ID"].ToString();
+                reader = comm.ExecuteReader();
 
-                String[] eligibleLCPs = null;
-
-                foreach (String coursePrefix in coursePrefixes)
+                while (reader.Read())
                 {
-                    if (String.Compare(courseID, 0, coursePrefix, 0, coursePrefix.Length) == 0)
+                    Student student = null;
+
+                    DateTime lastAttendanceDate;
+                    OrionTerm effTerm = new OrionTerm(reader["EFF_TRM"].ToString());
+                    String studentID = reader["STDNT_ID"].ToString();
+                    String courseID = reader["CRS_ID"].ToString();
+                    String refNum = reader["REF_NUM"].ToString();
+                    DateTime.TryParse(reader["Last Attendance Date"].ToString(), out lastAttendanceDate);
+                    DateTime registrationDate = DateTime.Parse(reader["Registration Date"].ToString());
+                    String initialFunctioningLevel = reader["Initial Functioning Level"].ToString();
+
+                    if (!studentDictionary.ContainsKey(studentID))
                     {
-                        eligibleLCPs = LCPDictionary[coursePrefix];
+                        student = new Student();
+                        studentDictionary.Add(studentID, student);
+                        ESOLStudentIDs.Add(studentID);
                     }
+                    else
+                    {
+                        student = studentDictionary[studentID];
+                    }
+
+                    Course course = new Course();
+                    course.courseID = courseID;
+                    course.refNum = refNum;
+                    course.registrationDate = registrationDate;
+                    course.lastAttDate = lastAttendanceDate;
+                    course.term = effTerm;
+
+                    course.type = "ESOL";
+
+                    switch (initialFunctioningLevel)
+                    {
+                        case "B":
+                            course.EFL = 0;
+                            break;
+                        case "C":
+                            course.EFL = 1;
+                            break;
+                        case "D":
+                            course.EFL = 2;
+                            break;
+                        case "E":
+                            course.EFL = 3;
+                            break;
+                        case "F":
+                            course.EFL = 4;
+                            break;
+                        case "G":
+                            course.EFL = 5;
+                            break;
+                    }
+
+                    student.courses.Add(course);
                 }
 
-                if (eligibleLCPs == null)
-                {
-                    continue;
-                }
+                reader.Close();
 
-                List<String> studentLCPs = previouslyReportedLCPs.ContainsKey(studentID) ? previouslyReportedLCPs[studentID] : new List<String>();
+                comm = new SqlCommand(@"SELECT
+	                                        AdultEdStudents.STDNT_ID
+	                                        ,OrionTerm
+	                                        ,CAST(LEFT(StateReportingYear, 4) AS INT) AS [StateReportingYear]
+                                        FROM
+	                                        (SELECT
+		                                        DISTINCT STDNT_ID
+	                                        FROM
+		                                        #ESOLEnrollments) AdultEdStudents
+	                                        LEFT JOIN (SELECT
+					                                        r6.DE1021 AS [STDNT_ID]
+					                                        ,xwalk.OrionTerm
+					                                        ,xwalk.StateReportingYear
+				                                        FROM
+					                                        StateSubmission.SDB.RecordType6 r6
+					                                        INNER JOIN MIS.dbo.vwTermYearXwalk xwalk ON xwalk.StateReportingTerm = r6.DE1028
+                                                        WHERE
+					                                        r6.DE3001 = '13204'
+					                                        AND r6.DE3022 NOT IN ('H', 'K', 'L', 'M', 'X')) prevClass ON prevClass.STDNT_ID = AdultEdStudents.STDNT_ID
+																												      AND prevClass.OrionTerm < '" + term + @"'
+                                        ORDER BY
+	                                        AdultEdStudents.STDNT_ID
+	                                        ,OrionTerm DESC", conn);
 
-                for (int i = 0; i < eligibleLCPs.Length; i++)
+                reader = comm.ExecuteReader();
+
+                Dictionary<String, int> mostRecentStateReportingYearSeen = new Dictionary<string, int>();
+                Dictionary<String, String> mostRecentTermSeen = new Dictionary<string, string>();
+                int currentStateReportingYear = int.Parse(term.getStateReportingYear().ToString().Substring(0, 4));
+
+                ESOLstudentCurrentContinuousEnrollmentPeriodStartTerm.Clear();
+                ESOLstudentReadingorListeningDesignations.Clear();
+
+                String currentStudent = "";
+
+                while (reader.Read())
                 {
-                    if (eligibleLCPs[i] == null)
+                    int stateReportingYear = 0;
+                    String studentID = reader["STDNT_ID"].ToString();
+                    String orionTerm = reader["OrionTerm"].ToString();
+
+                    if (currentStudent != "" && currentStudent != studentID && !ESOLstudentCurrentContinuousEnrollmentPeriodStartTerm.ContainsKey(currentStudent))
+                    {
+                        ESOLstudentCurrentContinuousEnrollmentPeriodStartTerm.Add(currentStudent, mostRecentTermSeen[currentStudent]);
+                    }
+
+                    if (!int.TryParse(reader["StateReportingYear"].ToString(), out stateReportingYear))
+                    {
+                        ESOLstudentCurrentContinuousEnrollmentPeriodStartTerm.Add(studentID, term.ToString());
+                        continue;
+                    }
+
+                    if (ESOLstudentCurrentContinuousEnrollmentPeriodStartTerm.ContainsKey(studentID))
                     {
                         continue;
                     }
 
-                    bool previouslyCalculated = false;
 
-                    if (!studentLCPs.Contains(eligibleLCPs[i]))
+                    if (!mostRecentStateReportingYearSeen.ContainsKey(studentID))
                     {
-                        foreach (Tuple<String, String, String, OrionTerm> previouslyCalculatedLCP in previouslyCalculatedLCPs)
-                        {
-                            if (previouslyCalculatedLCP.Item1 == studentID && previouslyCalculatedLCP.Item3 == eligibleLCPs[i])
-                            {
-                                previouslyCalculated = true;
-                                break;
-                            }
-                        }
+                        mostRecentStateReportingYearSeen.Add(studentID, stateReportingYear);
+                        mostRecentTermSeen.Add(studentID, orionTerm);
 
-                        foreach (Tuple<String, String, String, OrionTerm> previouslyCalculatedLCP in calculatedLCPs)
-                        {
-                            if (previouslyCalculatedLCP.Item1 == studentID && previouslyCalculatedLCP.Item3 == eligibleLCPs[i])
-                            {
-                                previouslyCalculated = true;
-                                break;
-                            }
-                        }
-
-                        if (!previouslyCalculated)
-                        {
-                            Tuple<String, String, String, OrionTerm> newLCP = new Tuple<string, string, string, OrionTerm>(studentID, "LS", eligibleLCPs[i], term);
-                            calculatedLCPs.Add(newLCP);
-                            studentLCPs.Add(eligibleLCPs[i]);
-                            break;
-                        }
                     }
-                }
-            }
 
-            reader.Close();
-
-            comm = new SqlCommand(@"SELECT                                                                                                                        
-                                         CASE                                                                                                                 
-                                            WHEN prev.PREV_STDNT_SSN IS NULL THEN r5.DE1021                                                                   
-                                            ELSE stdnt.STUDENT_SSN                                                                                            
-                                        END AS [Student_SSN]                                                                                                  
-                                         ,OrionTerm,DE2105                                                                                                    
-                                     FROM                                                                                                                     
-                                         StateSubmission.SDB.recordType5 r5                                                                                   
-                                         INNER JOIN MIS.dbo.vwTermYearXwalk xwalk ON xwalk.StateReportingTerm = r5.DE1028                                     
-                                         LEFT JOIN MIS.dbo.ST_STDNT_A_PREV_STDNT_SSN_USED_125 prev ON prev.PREV_STDNT_SSN_TY + prev.PREV_STDNT_SSN = r5.DE1021
-                                         LEFT JOIN MIS.dbo.ST_STDNT_A_125 stdnt ON stdnt.[ISN_ST_STDNT_A] = prev.[ISN_ST_STDNT_A]                             
-                                     WHERE                                                                                                                    
-                                         xwalk.OrionTerm < '" + term + @"'                                                                                     
-                                         AND xwalk.StateReportingYear IN ('" + term.getStateReportingYear() + "','"
-                                        + term.getStateReportingYear().prevReportingYear() + @"')
-                                         AND r5.SubmissionType = 'E'                                                                                          
-                                         AND r5.DE2105 <> 'Z'                                                                                                 
-                                     ORDER BY                                                                                                                 
-                                         [Student_SSN]", conn);
-
-
-            reader = comm.ExecuteReader();
-
-            previouslyReportedLCPs.Clear();
-
-            while (reader.Read())
-            {
-                String studentID = reader["Student_SSN"].ToString().Trim();
-                String LCP = reader["DE2105"].ToString().Trim();
-
-                OrionTerm LCPterm = new OrionTerm(reader["OrionTerm"].ToString());
-
-                if (!previouslyReportedLCPs.ContainsKey(studentID))
-                {
-                    previouslyReportedLCPs.Add(studentID, new List<string>());
-                }
-
-                previouslyReportedLCPs[studentID].Add(LCP);
-            }
-
-            reader.Close();
-
-            int[] mathRanges = new int[] { 0, 314, 442, 506, 566 };
-            String[] mathLCPs = new String[] { "A", "B", "C", "D" };
-            int[] readingRanges = new int[] { 0, 368, 461, 518, 567 };
-            String[] readingLCPs = new String[] { "E", "F", "G", "H" };
-            int[] languageRanges = new int[] { 0, 390, 491, 524, 560 };
-            String[] languageLCPs = new String[] { "J", "K", "M", "N" };
-
-            Dictionary<String, int[]> testFormRanges = new Dictionary<string, int[]>();
-
-            comm = new SqlCommand(@"SELECT
-	                                    *
-                                    FROM
-	                                    (
-	                                    SELECT                                                                                                                           
-		                                    class.STDNT_ID
-		                                    ,class.CRS_ID
-		                                    ,class.REF_NUM
-		                                    ,xwalk.SUBJECT                                                                 
-		                                    ,pretest.TST_DT AS [Pretest Date]
-		                                    ,pretest.SCALE_SCORE AS [Pretest Score]                                                  
-		                                    ,pretabe.LOWER_RANGE AS [Pretest Lower]
-		                                    ,pretabe.UPPER_RANGE AS [Pretest Upper]
-		                                    ,MAX(classlog.LOG_DATE) AS [RegDate]       
-		                                    ,posttest.TST_DT AS [Posttest Date]
-		                                    ,posttest.SCALE_SCORE AS [Posttest Score]
-		                                    ,posttabe.LOWER_RANGE AS [Posttest Lower]
-		                                    ,posttabe.UPPER_RANGE AS [Posttest Upper]
-		                                    ,ROW_NUMBER() OVER (PARTITION BY class.STDNT_ID, class.REF_NUM, xwalk.SUBJECT ORDER BY pretest.TST_DT DESC) RN
-		                                    ,ROW_NUMBER() OVER (PARTITION BY class.STDNT_ID, class.REF_NUM, xwalk.SUBJECT ORDER BY posttest.SCALE_SCORE DESC) RN2                              
-	                                    FROM                                                                                                                           
-		                                    MIS.[dbo].[ST_STDNT_CLS_A_235] class                                                                                       
-		                                    INNER JOIN MIS.[dbo].[ST_STDNT_CLS_LOG_230] classlog ON classlog.REF_NUM = class.REF_NUM                                   
-																                                    AND classlog.STDNT_ID = class.STDNT_ID                                
-		                                    INNER JOIN Adhoc.[dbo].[Course_Subject_Area_Xwalk] xwalk ON xwalk.CRS_ID = LEFT(class.CRS_ID, 7)                           
-		                                    INNER JOIN MIS.dbo.ST_SUBTEST_A_155 pretest ON pretest.SUBTEST = xwalk.SUBJECT                                             
-													                                    AND pretest.STUDENT_ID = class.STDNT_ID                                           
-		                                    INNER JOIN MIS.dbo.ST_SUBTEST_A_155 posttest ON posttest.SUBTEST = xwalk.SUBJECT                                           
-													                                    AND posttest.STUDENT_ID = class.STDNT_ID                                          
-		                                    LEFT JOIN Adhoc.dbo.TABEFormRanges pretabe ON pretabe.Form = LEFT(pretest.TST_FRM, 1)                                      
-													                                    AND pretabe.SUBTEST = pretest.SUBTEST                                             
-		                                    LEFT JOIN Adhoc.dbo.TABEFormRanges posttabe ON posttabe.Form = LEFT(posttest.TST_FRM, 1)                                   
-													                                    AND posttabe.SUBTEST = posttest.SUBTEST                                           
-	                                    WHERE                                                                                                                          
-		                                    class.EFF_TRM = '" + term + @"'                                                                                             
-		                                    AND classlog.LOG_ACTION = 'A'                                                                                              
-		                                    AND pretest.TST_TY = 'TABE'                                                                                                
-		                                    AND pretest.SCALE_SCORE > 0                                                                                                
-		                                    AND posttest.TST_TY = 'TABE'                                                                                               
-		                                    AND pretest.SCALE_SCORE<posttest.SCALE_SCORE                                                                               
-		                                    AND pretest.TST_DT > (SELECT                                                                                                
-								                                    SESS_BEG_DT                                                                                        
-							                                    FROM                                                                                                   
-								                                    MIS.dbo.vwTermYearXwalk xwalk                                                                      
-							                                    WHERE                                                                                                  
-								                                    OrionTerm = '" + term.getStateReportingYear().prevReportingYear().getNthTerm(1).ToOrionTerm() + @"')
-	                                    GROUP BY                                                                                                                       
-		                                    class.STDNT_ID
-		                                    ,class.CRS_ID
-		                                    ,class.REF_NUM
-		                                    ,xwalk.SUBJECT                                                                 
-		                                    ,pretest.TST_DT
-		                                    ,pretest.SCALE_SCORE
-		                                    ,posttest.TST_DT
-		                                    ,posttest.SCALE_SCORE                                               
-		                                    ,posttabe.LOWER_RANGE
-		                                    ,posttabe.UPPER_RANGE
-		                                    ,pretabe.LOWER_RANGE
-		                                    ,pretabe.UPPER_RANGE                                     
-	                                    HAVING                                                                                                                         
-		                                    posttest.TST_DT > MAX(classlog.LOG_DATE)                                                                                   
-		                                    AND pretest.TST_DT <= MAX(classlog.LOG_DATE)                                                                               
-	                                    ) SRC
-                                    WHERE
-	                                    SRC.RN = 1
-	                                    AND SRC.RN2 = 1", conn);
-
-            reader = comm.ExecuteReader();
-            
-            int validPreTestScore = 0;
-            int validPostTestScore = 0;
-            List<int> validPreTestScores = new List<int>();
-            List<int> validPostTestScores = new List<int>();
-
-            while (reader.Read())
-            {
-
-                String studentID = reader["STDNT_ID"].ToString();
-                String subject = reader["SUBJECT"].ToString();
-                String refNum = reader["REF_NUM"].ToString();
-                String courseID = reader["CRS_ID"].ToString();
-
-                int pretestScore = int.Parse(reader["Pretest Score"].ToString());
-                int posttestScore = int.Parse(reader["Posttest Score"].ToString());
-
-                int initialFunctioningLevel = 0;
-                int finalFunctioningLevel = 0;
-
-                int[] scoreRanges = null;
-                String[] LCPs = null;
-
-                if (subject == "MA")
-                {
-                    scoreRanges = mathRanges;
-                    LCPs = mathLCPs;
-                }
-                else if (subject == "RE")
-                {
-                    scoreRanges = readingRanges;
-                    LCPs = readingLCPs;
-                }
-                else
-                {
-                    scoreRanges = languageRanges;
-                    LCPs = languageLCPs;
-                }
-
-                for (int i = 0; i < scoreRanges.Length && pretestScore >= scoreRanges[i]; i++)
-                {
-                    initialFunctioningLevel = i;
-                }
-
-                for (int i = initialFunctioningLevel; i < scoreRanges.Length && posttestScore >= scoreRanges[i];)
-                {
-                    finalFunctioningLevel = i++;
-                }
-
-                for (int i = initialFunctioningLevel; i < finalFunctioningLevel; i++)
-                {
-                    List<String> studentLCPs = previouslyReportedLCPs.ContainsKey(studentID) ? previouslyReportedLCPs[studentID] : new List<String>();
-
-                    bool previouslyCalculated = false;
-
-                    if (!studentLCPs.Contains(LCPs[i]))
+                    if (stateReportingYear <= currentStateReportingYear - 2)
                     {
-                        Tuple<String, String, OrionTerm> LCP = new Tuple<string, string, OrionTerm>(studentID, LCPs[i], term);
-
-                        foreach (Tuple<String, String, String, OrionTerm> previouslyCalculatedLCP in previouslyCalculatedLCPs)
-                        {
-                            if (previouslyCalculatedLCP.Item1 == studentID && previouslyCalculatedLCP.Item3 == LCPs[i]
-                                && previouslyCalculatedLCP.Item2 == "LA" &&
-                                (previouslyCalculatedLCP.Item4.getStateReportingYear() == term.getStateReportingYear()
-                                || previouslyCalculatedLCP.Item4.getStateReportingYear() == term.getStateReportingYear().prevReportingYear()))
-                            {
-                                previouslyCalculated = true;
-                                break;
-                            }
-                        }
-
-                        foreach (Tuple<String, String, String, OrionTerm> previouslyCalculatedLCP in calculatedLCPs)
-                        {
-                            if (previouslyCalculatedLCP.Item1 == studentID && previouslyCalculatedLCP.Item3 == LCPs[i]
-                                && previouslyCalculatedLCP.Item2 == "LA" &&
-                                (previouslyCalculatedLCP.Item4.getStateReportingYear() == term.getStateReportingYear()
-                                || previouslyCalculatedLCP.Item4.getStateReportingYear() == term.getStateReportingYear().prevReportingYear()))
-                            {
-                                previouslyCalculated = true;
-                                break;
-                            }
-                        }
-
-                        if (!previouslyCalculated)
-                        {
-                            
-                            Tuple<String, String, String, OrionTerm> newLCP = new Tuple<string, string, string, OrionTerm>(studentID, "LA", LCPs[i], term);
-                            calculatedLCPs.Add(newLCP);
-                            studentLCPs.Add(LCPs[i]);
-                        }
+                        ESOLstudentCurrentContinuousEnrollmentPeriodStartTerm.Add(studentID, term.ToString());
+                        continue;
                     }
-                }
-            }
 
-            reader.Close();
-
-            comm = new SqlCommand(@"SELECT                                                                                       
-                                        STUDENT_ID                                                                               
-                                        ,Form                                                                                    
-                                        ,TST_SCR                                                                                 
-                                    FROM                                                                                         
-                                        (SELECT                                                                                  
-                                            STUDENT_ID                                                                           
-                                            ,RIGHT(TST_FRM, 1) AS[Form]                                                          
-                                            ,TST_SCR                                                                             
-                                            ,TST_DT                                                                              
-                                            ,ROW_NUMBER() OVER(PARTITION BY STUDENT_ID, RIGHT(TST_FRM, 1) ORDER BY TST_DT) AS RN 
-                                        FROM                                                                                     
-                                            MIS.dbo.ST_SUBTEST_A_155 test                                                        
-                                        WHERE                                                                                    
-                                            test.TST_TY = 'CASA'                                                                 
-                                            AND test.TST_SCR > 0                                                                 
-                                            AND RIGHT(test.TST_FRM, 1) IN ('R', 'L')) SRC                                         
-                                    WHERE                                                                                        
-                                        RN = 1                                                                                   
-                                    ORDER BY                                                                                     
-                                        STUDENT_ID", conn);
-
-            reader = comm.ExecuteReader();
-
-            String curStudent = "";
-            float curReadingScore = 0;
-            float curListeningScore = 0;
-
-            while (reader.Read())
-            {
-                String student = reader["STUDENT_ID"].ToString();
-                String form = reader["Form"].ToString();
-                float score = float.Parse(reader["TST_SCR"].ToString());
-
-                if (student != curStudent && curStudent != "")
-                {
-                    if (curReadingScore > curListeningScore)
+                    if (stateReportingYear <= mostRecentStateReportingYearSeen[studentID] - 2)
                     {
-                        listeningStudents.Add(curStudent);
+                        ESOLstudentCurrentContinuousEnrollmentPeriodStartTerm.Add(studentID, mostRecentTermSeen[studentID]);
+                    }
+
+                    mostRecentStateReportingYearSeen[studentID] = stateReportingYear;
+                    mostRecentTermSeen[studentID] = orionTerm;
+
+                    currentStudent = studentID;
+                }
+
+                reader.Close();
+
+                comm = new SqlCommand("TRUNCATE TABLE Adhoc.dbo.StudentCurrentContinuousEnrollmentPeriodStartDate", conn);
+                comm.ExecuteNonQuery();
+
+                DataTable table = new DataTable("StudentCurrentContinuousEnrollmentPeriodStartDate");
+                DataColumn column;
+                DataRow row;
+
+                column = new DataColumn();
+                column.DataType = System.Type.GetType("System.String");
+                column.ColumnName = "STDNT_ID";
+
+                table.Columns.Add(column);
+
+                column = new DataColumn();
+                column.DataType = System.Type.GetType("System.String");
+                column.ColumnName = "Term";
+                table.Columns.Add(column);
+
+                column = new DataColumn();
+                column.DataType = System.Type.GetType("System.String");
+                column.ColumnName = "Type";
+                table.Columns.Add(column);
+
+                DataColumn[] primaryKeyColumns = new DataColumn[2];
+                primaryKeyColumns[0] = table.Columns["STDNT_ID"];
+                primaryKeyColumns[1] = table.Columns["Type"];
+                table.PrimaryKey = primaryKeyColumns;
+
+
+                foreach (String student in ESOLstudentCurrentContinuousEnrollmentPeriodStartTerm.Keys.ToArray())
+                {
+                    row = table.NewRow();
+                    row["STDNT_ID"] = student;
+                    row["Term"] = ESOLstudentCurrentContinuousEnrollmentPeriodStartTerm[student];
+                    row["Type"] = "ESOL";
+                    table.Rows.Add(row);
+                }
+
+                SqlBulkCopy bulkCopy = new SqlBulkCopy(conn);
+
+                bulkCopy.DestinationTableName = "Adhoc.dbo.StudentCurrentContinuousEnrollmentPeriodStartDate";
+
+                bulkCopy.WriteToServer(table);
+
+                bulkCopy.Close();
+
+                comm = new SqlCommand(@"SELECT
+	                                        STDNT_ID
+	                                        ,MIN([Registration Date]) AS [Start Date]
+                                        INTO
+	                                        #searchDates
+                                        FROM
+	                                        (
+	                                        SELECT
+		                                        class.STDNT_ID
+		                                        ,class.CRS_ID
+		                                        ,class.REF_NUM
+		                                        ,CONVERT(DATE, CAST(MAX(log.LOG_DATE) AS VARCHAR)) AS [Registration Date]
+	                                        FROM
+		                                        Adhoc.dbo.StudentCurrentContinuousEnrollmentPeriodStartDate stuterm 
+		                                        INNER JOIN MIS.dbo.ST_STDNT_CLS_A_235 class ON class.STDNT_ID = stuterm.STDNT_ID
+													                                        AND class.EFF_TRM = stuterm.Term
+		                                        INNER JOIN MIS.dbo.ST_COURSE_A_150 course ON course.CRS_ID = class.CRS_ID
+		                                        INNER JOIN MIS.dbo.ST_STDNT_CLS_LOG_230 log ON log.REF_NUM = class.REF_NUM
+													                                        AND log.STDNT_ID = class.STDNT_ID
+		                                        INNER JOIN MIS.dbo.ST_OCP_LCP_A_55 af ON af.CRS_ID = class.CRS_ID
+	                                        WHERE
+		                                        stuterm.Type = 'ESOL'
+		                                        AND course.EFF_TRM <= class.EFF_TRM
+		                                        AND (course.END_TRM = '' OR course.END_TRM >= class.EFF_TRM)
+		                                        AND log.LOG_ACTION = 'A'
+		                                        AND class.TRNSCTN_TY = 'A'
+		                                        AND af.COMP_POINT_TY = 'AF'
+		                                        AND af.EFF_TRM <= class.EFF_TRM
+		                                        AND (af.END_TRM = '' OR af.END_TRM >= class.EFF_TRM)
+		                                        AND course.ICS_NUM = '13204'
+		                                        AND af.INITIAL_FUNCTIONING_LEVEL NOT IN ('H','K','L','M','X')
+	                                        GROUP BY
+		                                        class.STDNT_ID
+		                                        ,class.CRS_ID
+		                                        ,class.REF_NUM
+	                                        ) SRC
+                                        GROUP BY
+	                                        STDNT_ID
+
+                                        SELECT
+	                                        SRC.STDNT_ID
+	                                        ,SRC.TST_FRM
+	                                        ,SRC.TST_SCR
+                                        FROM
+	                                        (
+	                                        SELECT
+		                                        search.STDNT_ID
+		                                        ,test.TST_FRM
+		                                        ,test.TST_SCR
+		                                        ,ROW_NUMBER() OVER (PARTITION BY CASE WHEN test.TST_FRM LIKE '%R%' THEN 'R' ELSE 'L' END, test.STUDENT_ID ORDER BY test.TST_DT DESC) AS RN
+	                                        FROM
+		                                        #searchDates search
+		                                        INNER JOIN MIS.dbo.ST_SUBTEST_A_155 test ON test.STUDENT_ID = search.STDNT_ID
+	                                        WHERE
+		                                        test.TST_TY = 'CASA'
+		                                        AND test.TST_SCR > 0
+		                                        AND CONVERT(DATE, test.TST_DT) <= search.[Start Date]
+	                                        ) SRC
+                                        WHERE
+	                                        RN = 1
+                                        ORDER BY
+	                                        SRC.STDNT_ID", conn);
+
+                reader = comm.ExecuteReader();
+
+                currentStudent = "";
+                float listeningScore = 0;
+                float readingScore = 0;
+
+                while (reader.Read())
+                {
+                    String studentID = reader["STDNT_ID"].ToString();
+                    String form = reader["TST_FRM"].ToString();
+
+                    if (currentStudent != "" & studentID != currentStudent)
+                    {
+                        String designation = listeningScore < readingScore ? "L" : "R";
+
+                        ESOLstudentReadingorListeningDesignations.Add(currentStudent, designation);
+                    }
+
+                    if (form.Contains("L"))
+                    {
+                        listeningScore = float.Parse(reader["TST_SCR"].ToString());
                     }
                     else
                     {
-                        readingStudents.Add(curStudent);
+                        readingScore = float.Parse(reader["TST_SCR"].ToString());
                     }
 
-                    curReadingScore = 0;
-                    curListeningScore = 0;
+                    currentStudent = studentID;
                 }
 
-                if (form == "R")
+                reader.Close();
+
+                comm = new SqlCommand("TRUNCATE TABLE Adhoc.dbo.CASASReadingOrListeningDesignations", conn);
+                comm.ExecuteNonQuery();
+
+                table = new DataTable("ReadingOrListeningDesignations");
+
+                column = new DataColumn();
+                column.DataType = System.Type.GetType("System.String");
+                column.ColumnName = "STDNT_ID";
+
+                table.Columns.Add(column);
+
+                column = new DataColumn();
+                column.DataType = System.Type.GetType("System.String");
+                column.ColumnName = "DESIGNATION";
+                table.Columns.Add(column);
+
+                primaryKeyColumns = new DataColumn[1];
+                primaryKeyColumns[0] = table.Columns["STDNT_ID"];
+                table.PrimaryKey = primaryKeyColumns;
+
+                foreach (String student in ESOLstudentReadingorListeningDesignations.Keys.ToArray())
                 {
-                    curReadingScore = score;
-                }
-                else
-                {
-                    curListeningScore = score;
-                }
-
-
-                curStudent = student;
-            }
-
-            reader.Close();
-
-            int[] ESOLLevels = new int[] { 0, 179, 190, 200, 210, 220, 235 };
-            String[] ESOLLCPs = new string[] { "A", "B", "C", "D", "E", "F" };
-
-            comm = new SqlCommand(@"SELECT
-	                                    *
-                                    FROM
-	                                    (
-	                                    SELECT
-		                                    class.STDNT_ID AS [STUDENT_ID]
-		                                    ,class.REF_NUM
-		                                    ,class.CRS_ID
-		                                    ,MAX(classlog.LOG_DATE) AS [RegDate]
-		                                    ,ROW_NUMBER() OVER (PARTITION BY class.STDNT_ID, class.REF_NUM ORDER BY pretest.TST_DT ASC) RN
-		                                    ,ROW_NUMBER() OVER (PARTITION BY class.STDNT_ID, class.REF_NUM ORDER BY posttest.TST_SCR DESC) RN2
-		                                    ,pretest.TST_DT AS [Pretest Date]
-		                                    ,pretest.TST_SCR AS [Pretest Score]
-		                                    ,RIGHT(pretest.TST_FRM,1) AS [Pretest Form]
-		                                    ,posttest.TST_DT AS [Post-test Date]
-		                                    ,posttest.TST_SCR AS [Post-test Score]
-		                                    ,posttest.TST_FRM AS [Post-test Form]
-	                                    FROM
-		                                    MIS.dbo.ST_STDNT_CLS_A_235 class
-		                                    INNER JOIN MIS.dbo.ST_STDNT_CLS_LOG_230 classlog ON class.STDNT_ID = classlog.STDNT_ID
-														                                     AND class.REF_NUM = classlog.REF_NUM
-		                                    INNER JOIN MIS.dbo.ST_SUBTEST_A_155 pretest ON pretest.STUDENT_ID = class.STDNT_ID
-		                                    INNER JOIN MIS.dbo.ST_SUBTEST_A_155 posttest ON posttest.STUDENT_ID = class.STDNT_ID
-		                                    INNER JOIN MIS.dbo.vwCASASReadingOrListeningDesignations casas ON casas.STUDENT_ID = class.STDNT_ID
-	                                    WHERE
-		                                    classlog.LOG_ACTION = 'A'
-		                                    AND class.EFF_TRM = '" + term + @"'
-		                                    AND LEFT(class.CRS_ID , 3) = 'ELL'
-		                                    AND pretest.TST_TY = 'CASA'
-		                                    AND posttest.TST_TY = 'CASA'
-		                                    AND pretest.TST_SCR > 0
-		                                    AND posttest.TST_SCR > pretest.TST_SCR
-		                                    AND RIGHT(pretest.TST_FRM, 1) = casas.Designation
-		                                    AND RIGHT(posttest.TST_FRM, 1) = casas.Designation
-	                                    GROUP BY
-		                                    class.STDNT_ID
-		                                    ,class.REF_NUM
-		                                    ,class.CRS_ID
-		                                    ,pretest.TST_DT
-		                                    ,pretest.TST_SCR
-		                                    ,pretest.TST_FRM
-		                                    ,posttest.TST_DT
-		                                    ,posttest.TST_SCR
-		                                    ,posttest.TST_FRM
-	                                    HAVING
-		                                    pretest.TST_DT <= MAX(classlog.LOG_DATE)
-		                                    AND posttest.TST_DT > MAX(classlog.LOG_DATE)
-	                                    ) SRC
-                                    WHERE
-	                                    RN = 1
-	                                    AND RN2 = 1", conn);
-
-            reader = comm.ExecuteReader();
-
-            curStudent = "";
-            float preTestListeningScore = 0;
-            float postTestListeningScore = 0;
-            float preTestReadingScore = 0;
-            float postTestReadingScore = 0;
-            String testForm;
-
-            while (reader.Read())
-            {
-                curStudent = reader["STUDENT_ID"].ToString();
-                testForm = reader["Pretest Form"].ToString();
-
-                if (testForm == "L")
-                {
-                    preTestListeningScore = float.Parse(reader["Pretest Score"].ToString());
-                    postTestListeningScore = float.Parse(reader["Post-test Score"].ToString());
-                }
-                else
-                {
-                    preTestReadingScore = float.Parse(reader["Pretest Score"].ToString());
-                    postTestReadingScore = float.Parse(reader["Post-test Score"].ToString());
+                    row = table.NewRow();
+                    row["STDNT_ID"] = student;
+                    row["DESIGNATION"] = ESOLstudentReadingorListeningDesignations[student];
+                    table.Rows.Add(row);
                 }
 
-                if ((testForm == "L" && listeningStudents.Contains(curStudent)) || (testForm == "R" && readingStudents.Contains(curStudent)))
+                bulkCopy = new SqlBulkCopy(conn);
+                bulkCopy.DestinationTableName = "Adhoc.dbo.CASASReadingOrListeningDesignations";
+
+                bulkCopy.WriteToServer(table);
+
+                bulkCopy.Close();
+
+                comm = new SqlCommand(@"SELECT
+	                                        stuterm.STDNT_ID
+	                                        ,xwalk.OrionTerm
+	                                        ,r5.DE2101
+	                                        ,r5.DE2105
+                                        FROM
+	                                        Adhoc.[dbo].[StudentCurrentContinuousEnrollmentPeriodStartDate] stuterm
+	                                        INNER JOIN StateSubmission.SDB.RecordType5 r5 ON r5.DE1021 = stuterm.STDNT_ID
+	                                        INNER JOIN MIS.dbo.vwTermYearXwalk xwalk ON xwalk.StateReportingTerm = r5.DE1028
+                                        WHERE
+	                                        r5.DE2105 <> 'Z'
+	                                        AND xwalk.OrionTerm >= stuterm.Term
+	                                        AND r5.DE2101 = '1532010300'
+                                            AND xwalk.OrionTerm < '" + term + @"'
+                                            AND r5.SubmissionType <> 'LE'
+                                        ORDER BY
+	                                        stuterm.STDNT_ID
+	                                        ,xwalk.OrionTerm", conn);
+
+                reader = comm.ExecuteReader();
+
+                while (reader.Read())
                 {
-                    int pretestScore = (int)((testForm == "L") ? preTestListeningScore : preTestReadingScore);
-                    int posttestScore = (int)((testForm == "L") ? postTestListeningScore : postTestReadingScore);
+                    String studentID = reader["STDNT_ID"].ToString();
+                    String CIP = reader["DE2101"].ToString();
+                    String LCPval = reader["DE2105"].ToString();
 
-                    int initialFunctioningLevel = 0;
-                    int finalFunctioningLevel = 0;
+                    Tuple<String, String> LCP = new Tuple<string, string>(CIP, LCPval.Trim());
 
-                    for (int i = 0; i < ESOLLevels.Length && pretestScore > ESOLLevels[i]; i++)
+                    if (!studentLCPs.ContainsKey(studentID))
                     {
-                        initialFunctioningLevel = i;
+                        studentLCPs.Add(studentID, new List<Tuple<string, string>>());
                     }
 
-                    for (int i = initialFunctioningLevel; i < ESOLLevels.Length && posttestScore > ESOLLevels[i];)
+                    studentLCPs[studentID].Add(LCP);
+                }
+
+                reader.Close();
+
+                comm = new SqlCommand(@"SELECT
+	                                        casas.STDNT_ID
+	                                        ,test.TST_FRM
+                                            ,test.TST_SCR
+	                                        ,CONVERT(DATE, test.TST_DT) AS [Test Date]
+                                        FROM
+	                                        Adhoc.dbo.CASASReadingOrListeningDesignations casas
+	                                        INNER JOIN MIS.dbo.ST_SUBTEST_A_155 test ON test.STUDENT_ID = casas.STDNT_ID
+											                                         AND test.TST_FRM LIKE '%' + casas.DESIGNATION + '%'
+                                        WHERE
+	                                        test.TST_TY = 'CASA'
+	                                        AND test.TST_SCR > 0", conn);
+
+                reader = comm.ExecuteReader();
+
+                while (reader.Read())
+                {
+                    String studentID = reader["STDNT_ID"].ToString();
+
+                    Test test = new Test();
+                    test.type = "CASAS";
+                    test.score = float.Parse(reader["TST_SCR"].ToString());
+                    test.testDate = DateTime.Parse(reader["Test Date"].ToString());
+
+                    studentDictionary[studentID].tests.Add(test);
+                }
+
+                reader.Close();
+
+                foreach (String studentID in ESOLStudentIDs)
+                {
+                    Student student = studentDictionary[studentID];
+
+                    if (!studentLCPs.ContainsKey(studentID))
                     {
-                        finalFunctioningLevel = i++;
+                        studentLCPs.Add(studentID, new List<Tuple<string, string>>());
                     }
 
-                    for (int i = initialFunctioningLevel; i < finalFunctioningLevel; i++)
+                    if (!newLCPs.ContainsKey(studentID))
                     {
-                        List<String> studentLCPs = previouslyReportedLCPs.ContainsKey(curStudent) ? previouslyReportedLCPs[curStudent] : new List<String>();
+                        newLCPs.Add(studentID, new List<Tuple<string, string, DateTime>>());
+                    }
 
-                        bool previouslyCalculated = false;
+                    Course[] courses = student.getCoursesInOrder("ESOL");
+                    Course[] previousCourses = courses.Where(course => course.term < term).ToArray();
+                    Course[] currentCourses = courses.Where(course => course.term == term).ToArray();
+                    Course[] laterCourses = courses.Where(course => course.term > term).ToArray();
 
-                        if (!studentLCPs.Contains(ESOLLCPs[i]))
+                    if (currentCourses.Length == 0)
+                    {
+                        continue;
+                    }
+
+                    Test[] postTests = null;
+                    int initialFunctioningLevel;
+                    float postTestScore;
+                    Test[] pretests;
+
+                    for (int i = 0; i < currentCourses.Length; i++)
+                    {
+                        pretests = student.getTestsForDateRange(currentCourses[i].registrationDate.AddMonths(-11), currentCourses[i].registrationDate, "CASAS");
+
+                        if (pretests.Where(test => esolEFLs[currentCourses[i].EFL].lowerBound < test.score && esolEFLs[currentCourses[i].EFL].upperBound > test.score).Count() == 0)
                         {
-                            Tuple<String, String, OrionTerm> LCP = new Tuple<string, string, OrionTerm>(curStudent, ESOLLCPs[i], term);
+                            continue;
+                        }
 
-                            foreach (Tuple<String, String, String, OrionTerm> previouslyCalculatedLCP in previouslyCalculatedLCPs)
+                        postTests = student.getTestsForDateRange(courses[i].registrationDate,
+                            ((i < currentCourses.Length - 1) ? currentCourses[i + 1].registrationDate : nextTermStartDate), "CASAS");
+
+                        initialFunctioningLevel = currentCourses[i].EFL;
+
+                        if (postTests.Length == 0)
+                        {
+                            continue;
+                        }
+
+                        postTestScore = postTests.Last().score;
+
+                        for (int j = initialFunctioningLevel; j < esolEFLs.Length && postTestScore > esolEFLs[j].upperBound; j++)
+                        {
+                            Tuple<String, String, DateTime> LCP = new Tuple<string, string, DateTime>("1532010300", esolLCPs[j], postTests.Last().testDate);
+
+                            if (!studentLCPs[studentID].Any(prev => prev.Equals(LCP)))
                             {
-                                if (previouslyCalculatedLCP.Item1 == curStudent && previouslyCalculatedLCP.Item3 == ESOLLCPs[i]
-                                    && previouslyCalculatedLCP.Item2 == "LE" &&
-                                    (previouslyCalculatedLCP.Item4.getStateReportingYear() == term.getStateReportingYear()
-                                    || previouslyCalculatedLCP.Item4.getStateReportingYear() == term.getStateReportingYear().prevReportingYear()))
+                                studentLCPs[studentID].Add(new Tuple<String, String>(LCP.Item1, LCP.Item2));
+                                newLCPs[studentID].Add(LCP);
+                            }
+                        }
+                    }
+                }
+
+                comm = new SqlCommand(@"SELECT
+	                                        class.STDNT_ID
+	                                        ,class.CRS_ID
+	                                        ,class.EFF_TRM
+	                                        ,class.REF_NUM
+	                                        ,CONVERT(DATE, CAST(MAX(log.LOG_DATE) AS VARCHAR(MAX))) AS [Registration Date]
+	                                        ,CASE
+		                                        WHEN ISDATE(class.ATT_DATE) > 0 THEN CONVERT(DATE, class.ATT_DATE)
+	                                        END AS [Last Attendance Date]
+	                                        ,xwalk.INIT_FUNC_LEVEL
+	                                        ,xwalk.SUBJECT
+                                        INTO
+	                                        #ABEEnrollments
+                                        FROM
+	                                        MIS.dbo.ST_STDNT_CLS_A_235 class
+	                                        INNER JOIN MIS.dbo.ST_COURSE_A_150 course ON course.CRS_ID = class.CRS_ID
+												                                        AND course.EFF_TRM <= class.EFF_TRM
+												                                        AND (course.END_TRM = '' OR course.END_TRM >= class.EFF_TRM)
+	                                        INNER JOIN MIS.dbo.ST_STDNT_CLS_LOG_230 log ON log.REF_NUM = class.REF_NUM
+												                                        AND log.STDNT_ID = class.STDNT_ID
+	                                        INNER JOIN Adhoc.dbo.Course_Subject_Area_Xwalk xwalk ON xwalk.CRS_ID = course.CRS_ID
+                                        WHERE
+	                                        course.ICS_NUM IN ('13104', '13201', '13202', '13203')
+	                                        AND log.LOG_ACTION = 'A'
+	                                        AND class.TRNSCTN_TY = 'A'
+                                        GROUP BY
+	                                        class.STDNT_ID
+	                                        ,class.CRS_ID
+	                                        ,class.REF_NUM
+	                                        ,class.ATT_DATE
+	                                        ,class.EFF_TRM
+	                                        ,class.GRD_DT
+	                                        ,xwalk.INIT_FUNC_LEVEL
+	                                        ,xwalk.SUBJECT
+
+                                        SELECT
+	                                        *
+                                        FROM
+	                                        #ABEEnrollments", conn);
+
+                reader = comm.ExecuteReader();
+
+                while (reader.Read())
+                {
+                    Student student = null;
+
+                    DateTime lastAttendanceDate;
+                    OrionTerm effTerm = new OrionTerm(reader["EFF_TRM"].ToString());
+                    String studentID = reader["STDNT_ID"].ToString();
+                    String courseID = reader["CRS_ID"].ToString();
+                    String refNum = reader["REF_NUM"].ToString();
+                    DateTime.TryParse(reader["Last Attendance Date"].ToString(), out lastAttendanceDate);
+                    DateTime registrationDate = DateTime.Parse(reader["Registration Date"].ToString());
+                    String initialFunctioningLevel = reader["INIT_FUNC_LEVEL"].ToString();
+                    String subject = reader["SUBJECT"].ToString();
+
+                    if (!studentDictionary.ContainsKey(studentID))
+                    {
+                        student = new Student();
+                        studentDictionary.Add(studentID, student);
+                        ABEStudentIDs.Add(studentID);
+                    }
+                    else
+                    {
+                        student = studentDictionary[studentID];
+                        ABEStudentIDs.Add(studentID);
+                    }
+
+                    Course course = new Course();
+                    course.courseID = courseID;
+                    course.refNum = refNum;
+                    course.registrationDate = registrationDate;
+                    course.lastAttDate = lastAttendanceDate;
+                    course.term = effTerm;
+                    course.subject = subject;
+                    course.type = "ABE";
+                    course.EFL = int.Parse(reader["INIT_FUNC_LEVEL"].ToString()) - 1;
+
+                    student.courses.Add(course);
+                }
+
+                reader.Close();
+
+                comm = new SqlCommand(@"SELECT
+	                                        AdultEdStudents.STDNT_ID
+	                                        ,OrionTerm
+	                                        ,CAST(LEFT(StateReportingYear, 4) AS INT) AS [StateReportingYear]
+                                        FROM
+	                                        (SELECT
+		                                        DISTINCT STDNT_ID
+	                                        FROM
+		                                        #ABEEnrollments) AdultEdStudents
+	                                        LEFT JOIN (SELECT
+					                                        r6.DE1021 AS [STDNT_ID]
+					                                        ,xwalk.OrionTerm
+					                                        ,xwalk.StateReportingYear
+				                                        FROM
+					                                        StateSubmission.SDB.RecordType6 r6
+					                                        INNER JOIN MIS.dbo.vwTermYearXwalk xwalk ON xwalk.StateReportingTerm = r6.DE1028
+                                                        WHERE
+					                                        r6.DE3001 IN ('13104', '13201', '13202', '13203')) prevClass ON prevClass.STDNT_ID = AdultEdStudents.STDNT_ID
+																												         AND prevClass.OrionTerm < '" + term + @"'
+                                        ORDER BY
+	                                        AdultEdStudents.STDNT_ID
+	                                        ,OrionTerm DESC", conn);
+
+                reader = comm.ExecuteReader();
+
+                mostRecentStateReportingYearSeen = new Dictionary<string, int>();
+                mostRecentTermSeen = new Dictionary<string, string>();
+                currentStateReportingYear = int.Parse(term.getStateReportingYear().ToString().Substring(0, 4));
+
+                currentStudent = "";
+
+                ABEstudentCurrentContinuousEnrollmentPeriodStartTerm.Clear();
+
+                while (reader.Read())
+                {
+                    int stateReportingYear = 0;
+                    String studentID = reader["STDNT_ID"].ToString();
+                    String orionTerm = reader["OrionTerm"].ToString();
+
+                    if (currentStudent != "" && currentStudent != studentID && !ABEstudentCurrentContinuousEnrollmentPeriodStartTerm.ContainsKey(currentStudent))
+                    {
+                        ABEstudentCurrentContinuousEnrollmentPeriodStartTerm.Add(currentStudent, mostRecentTermSeen[currentStudent]);
+                    }
+
+                    if (!int.TryParse(reader["StateReportingYear"].ToString(), out stateReportingYear))
+                    {
+                        ABEstudentCurrentContinuousEnrollmentPeriodStartTerm.Add(studentID, term.ToString());
+                        continue;
+                    }
+
+                    if (ABEstudentCurrentContinuousEnrollmentPeriodStartTerm.ContainsKey(studentID))
+                    {
+                        continue;
+                    }
+
+
+                    if (!mostRecentStateReportingYearSeen.ContainsKey(studentID))
+                    {
+                        mostRecentStateReportingYearSeen.Add(studentID, stateReportingYear);
+                        mostRecentTermSeen.Add(studentID, orionTerm);
+
+                        if (stateReportingYear <= currentStateReportingYear - 2)
+                        {
+                            ABEstudentCurrentContinuousEnrollmentPeriodStartTerm.Add(studentID, term.ToString());
+                            continue;
+                        }
+                    }
+
+                    if (stateReportingYear <= mostRecentStateReportingYearSeen[studentID] - 2)
+                    {
+                        ABEstudentCurrentContinuousEnrollmentPeriodStartTerm.Add(studentID, mostRecentTermSeen[studentID]);
+                    }
+
+                    mostRecentStateReportingYearSeen[studentID] = stateReportingYear;
+                    mostRecentTermSeen[studentID] = orionTerm;
+
+                    currentStudent = studentID;
+                }
+
+                reader.Close();
+
+                comm = new SqlCommand("TRUNCATE TABLE Adhoc.dbo.StudentCurrentContinuousEnrollmentPeriodStartDate", conn);
+                comm.ExecuteNonQuery();
+
+                table = new DataTable("StudentCurrentContinuousEnrollmentPeriodStartDate");
+
+                column = new DataColumn();
+                column.DataType = System.Type.GetType("System.String");
+                column.ColumnName = "STDNT_ID";
+
+                table.Columns.Add(column);
+
+                column = new DataColumn();
+                column.DataType = System.Type.GetType("System.String");
+                column.ColumnName = "Term";
+                table.Columns.Add(column);
+
+                column = new DataColumn();
+                column.DataType = System.Type.GetType("System.String");
+                column.ColumnName = "Type";
+                table.Columns.Add(column);
+
+                primaryKeyColumns = new DataColumn[2];
+                primaryKeyColumns[0] = table.Columns["STDNT_ID"];
+                primaryKeyColumns[1] = table.Columns["Type"];
+                table.PrimaryKey = primaryKeyColumns;
+
+
+                foreach (String student in ABEstudentCurrentContinuousEnrollmentPeriodStartTerm.Keys.ToArray())
+                {
+                    row = table.NewRow();
+                    row["STDNT_ID"] = student;
+                    row["Term"] = ABEstudentCurrentContinuousEnrollmentPeriodStartTerm[student];
+                    row["Type"] = "ABE";
+                    table.Rows.Add(row);
+                }
+
+                bulkCopy = new SqlBulkCopy(conn);
+
+                bulkCopy.DestinationTableName = "Adhoc.dbo.StudentCurrentContinuousEnrollmentPeriodStartDate";
+
+                bulkCopy.WriteToServer(table);
+
+                bulkCopy.Close();
+
+                comm = new SqlCommand(@"SELECT
+	                                        stuterm.STDNT_ID
+	                                        ,xwalk.OrionTerm
+	                                        ,r5.DE2101
+	                                        ,r5.DE2105
+                                        FROM
+	                                        Adhoc.[dbo].[StudentCurrentContinuousEnrollmentPeriodStartDate] stuterm
+	                                        INNER JOIN StateSubmission.SDB.RecordType5 r5 ON r5.DE1021 = stuterm.STDNT_ID
+	                                        INNER JOIN MIS.dbo.vwTermYearXwalk xwalk ON xwalk.StateReportingTerm = r5.DE1028
+                                        WHERE
+	                                        r5.DE2105 <> 'Z'
+	                                        AND xwalk.OrionTerm >= stuterm.Term
+	                                        AND r5.DE2101 = '1532010200'
+                                            AND xwalk.OrionTerm < '" + term + @"'
+                                        ORDER BY
+	                                        stuterm.STDNT_ID
+	                                        ,xwalk.OrionTerm", conn);
+
+                reader = comm.ExecuteReader();
+
+                while (reader.Read())
+                {
+                    String studentID = reader["STDNT_ID"].ToString();
+                    String CIP = reader["DE2101"].ToString();
+                    String LCPval = reader["DE2105"].ToString();
+
+                    Tuple<String, String> LCP = new Tuple<string, string>(CIP, LCPval.Trim());
+
+                    if (!studentLCPs.ContainsKey(studentID))
+                    {
+                        studentLCPs.Add(studentID, new List<Tuple<string, string>>());
+                    }
+
+                    studentLCPs[studentID].Add(LCP);
+                }
+
+                reader.Close();
+
+                comm = new SqlCommand(@"SELECT DISTINCT 
+	                                        abe.STDNT_ID
+	                                        ,test.TST_FRM
+                                            ,test.TST_SCR
+                                            ,test.SUBTEST
+	                                        ,CONVERT(DATE, test.TST_DT) AS [Test Date]
+                                        FROM
+	                                        #ABEEnrollments abe
+	                                        INNER JOIN MIS.dbo.ST_SUBTEST_A_155 test ON test.STUDENT_ID = abe.STDNT_ID
+                                        WHERE
+	                                        test.TST_TY = 'TABE'
+	                                        AND test.TST_SCR > 0", conn);
+
+                reader = comm.ExecuteReader();
+
+                while (reader.Read())
+                {
+                    String studentID = reader["STDNT_ID"].ToString();
+
+                    Test test = new Test();
+                    test.type = "TABE";
+                    test.score = float.Parse(reader["TST_SCR"].ToString());
+                    test.subject = reader["SUBTEST"].ToString();
+                    test.testDate = DateTime.Parse(reader["Test Date"].ToString());
+
+                    studentDictionary[studentID].tests.Add(test);
+                }
+
+                reader.Close();
+
+                foreach (String studentID in ABEStudentIDs)
+                {
+                    Student student = studentDictionary[studentID];
+
+                    foreach (String subject in new String[] { "MA", "LA", "RE" })
+                    {
+                        String[] abeLCPs;
+
+                        switch (subject)
+                        {
+                            case "MA":
+                                abeLCPs = abeMathLCPs;
+                                break;
+                            case "LA":
+                                abeLCPs = abeLanguageLCPs;
+                                break;
+                            default:
+                                abeLCPs = abeReadingLCPs;
+                                break;
+                        }
+
+                        if (!studentLCPs.ContainsKey(studentID))
+                        {
+                            studentLCPs.Add(studentID, new List<Tuple<string, string>>());
+                        }
+
+                        if (!newLCPs.ContainsKey(studentID))
+                        {
+                            newLCPs.Add(studentID, new List<Tuple<string, string, DateTime>>());
+                        }
+
+                        Course[] courses = student.getCoursesInOrder("ABE", subject);
+                        Course[] previousCourses = courses.Where(course => course.term < term).ToArray();
+                        Course[] currentCourses = courses.Where(course => course.term == term).ToArray();
+                        Course[] laterCourses = courses.Where(course => course.term > term).ToArray();
+
+                        if (currentCourses.Length == 0)
+                        {
+                            continue;
+                        }
+
+                        Test[] postTests = null;
+                        int initialFunctioningLevel;
+                        float postTestScore;
+                        Test[] pretests;
+
+                        for (int i = 0; i < currentCourses.Length; i++)
+                        {
+                            pretests = student.getTestsForDateRange(currentCourses[i].registrationDate.AddMonths(-12), currentCourses[i].registrationDate, "TABE", subject);
+
+                            if (pretests.Where(test => abeEFLs[currentCourses[i].EFL].lowerBound < test.score && abeEFLs[currentCourses[i].EFL].upperBound > test.score).Count() == 0)
+                            {
+                                continue;
+                            }
+
+                            postTests = student.getTestsForDateRange(currentCourses[i].registrationDate,
+                                ((i < currentCourses.Length - 1) ? currentCourses[i + 1].registrationDate : nextTermStartDate), "TABE", subject);
+
+                            initialFunctioningLevel = currentCourses[i].EFL;
+
+                            if (postTests.Length == 0)
+                            {
+                                continue;
+                            }
+
+                            postTestScore = postTests.Last().score;
+
+                            for (int j = initialFunctioningLevel; j < abeEFLs.Length && postTestScore > abeEFLs[j].upperBound; j++)
+                            {
+                                Tuple<String, String, DateTime> LCP = new Tuple<string, string, DateTime>("1532010200", abeLCPs[j], postTests.Last().testDate);
+
+                                if (!studentLCPs[studentID].Any(prev => prev.Item1 == LCP.Item1 && prev.Item2 == LCP.Item2))
                                 {
-                                    previouslyCalculated = true;
+                                    studentLCPs[studentID].Add(new Tuple<String, String>(LCP.Item1, LCP.Item2));
+                                    newLCPs[studentID].Add(LCP);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                comm = new SqlCommand(@"SELECT                                                    
+                                           CRS_ID, COMP_POINT_ID, COMP_POINT_SEQ                  
+                                       FROM                                                       
+                                           MIS.dbo.ST_OCP_LCP_A_55 lcp                            
+                                       WHERE                                                      
+                                           lcp.COMP_POINT_TY = 'LS'                               
+                                           AND lcp.EFF_TRM <= '" + term + @"'                      
+                                           AND (lcp.END_TRM = '' OR lcp.END_TRM >= '" + term + @"')
+                                       ORDER BY                                                   
+                                           lcp.CRS_ID, lcp.COMP_POINT_SEQ DESC", conn);
+
+                reader = comm.ExecuteReader();
+
+                while (reader.Read())
+                {
+                    String coursePrefix = reader["CRS_ID"].ToString().Replace("*", "");
+                    String lcpValue = reader["COMP_POINT_ID"].ToString();
+                    int priority = int.Parse(reader["COMP_POINT_SEQ"].ToString());
+
+                    if (!AHSLCPDictionary.ContainsKey(coursePrefix))
+                    {
+                        AHSLCPDictionary.Add(coursePrefix, new String[priority]);
+                    }
+
+                    if (!AHSCoursePrefixes.Contains(coursePrefix))
+                    {
+                        AHSCoursePrefixes.Add(coursePrefix);
+                    }
+
+                    AHSLCPDictionary[coursePrefix][priority - 1] = lcpValue;
+                }
+
+                reader.Close();
+
+                comm = new SqlCommand(@"SELECT
+	                                        r5.DE1021, r5.DE2105
+                                        FROM
+	                                        StateSubmission.SDB.RecordType5 r5
+	                                        INNER JOIN MIS.dbo.vwTermYearXwalk xwalk ON xwalk.StateReportingTerm = r5.DE1028
+                                        WHERE
+	                                        r5.DE2105 <> 'Z'
+	                                        AND r5.DE2101 = '1532010202'
+	                                        AND xwalk.OrionTerm < '" + term + "'", conn);
+
+                reader = comm.ExecuteReader();
+
+                while (reader.Read())
+                {
+                    String studentID = reader["DE1021"].ToString();
+                    String lcp = reader["DE2105"].ToString();
+
+                    if (!studentLCPs.ContainsKey(studentID))
+                    {
+                        studentLCPs.Add(studentID, new List<Tuple<string, string>>());
+                    }
+
+                    studentLCPs[studentID].Add(new Tuple<string, string>("1532010202", lcp));
+                }
+
+                reader.Close();
+
+                comm = new SqlCommand(@"SELECT DISTINCT
+	                                        class.STDNT_ID, class.CRS_ID, CONVERT(DATE, class.GRD_DT) AS [Grade Date]
+                                        FROM
+	                                        MIS.dbo.ST_STDNT_CLS_A_235 class
+	                                        INNER JOIN MIS.dbo.ST_COURSE_A_150 course ON course.CRS_ID = class.CRS_ID
+	                                        INNER JOIN MIS.dbo.UTL_CODE_TABLE_120 code ON code.CODE = class.GRADE
+	                                        INNER JOIN MIS.dbo.UTL_CODE_TABLE_GENERIC_120 gen ON gen.ISN_UTL_CODE_TABLE = code.ISN_UTL_CODE_TABLE
+                                        WHERE
+	                                        course.ICS_NUM = '13202'
+	                                        AND class.EFF_TRM = '" + term + @"'
+	                                        AND gen.cnxarraycolumn = '8'
+	                                        AND code.TABLE_NAME = 'GRADE'
+	                                        AND gen.FIELD_VALUE = 'Y'", conn);
+
+                reader = comm.ExecuteReader();
+
+                while (reader.Read())
+                {
+                    String studentID = reader["STDNT_ID"].ToString();
+                    String courseID = reader["CRS_ID"].ToString();
+                    DateTime gradeDate = DateTime.Parse(reader["Grade Date"].ToString());
+
+                    if (!studentLCPs.ContainsKey(studentID))
+                    {
+                        studentLCPs.Add(studentID, new List<Tuple<string, string>>());
+                    }
+
+                    if (!newLCPs.ContainsKey(studentID))
+                    {
+                        newLCPs.Add(studentID, new List<Tuple<string, string, DateTime>>());
+                    }
+
+                    foreach (String prefix in AHSCoursePrefixes)
+                    {
+                        if (courseID.StartsWith(prefix))
+                        {
+                            for (int i = 0; i < AHSLCPDictionary[prefix].Length; i++)
+                            {
+                                if (AHSLCPDictionary[prefix][i] == null)
+                                {
+                                    continue;
+                                }
+
+                                Tuple<String, String, DateTime> LCP = new Tuple<string, string, DateTime>("1532010202", AHSLCPDictionary[prefix][i], gradeDate);
+
+                                if (!studentLCPs[studentID].Any(prev => prev.Item1 == LCP.Item1 && prev.Item2 == LCP.Item2))
+                                {
+                                    studentLCPs[studentID].Add(new Tuple<string, string>(LCP.Item1, LCP.Item2));
+                                    newLCPs[studentID].Add(LCP);
                                     break;
                                 }
                             }
-
-                            foreach (Tuple<String, String, String, OrionTerm> previouslyCalculatedLCP in calculatedLCPs)
-                            {
-                                if (previouslyCalculatedLCP.Item1 == curStudent && previouslyCalculatedLCP.Item2 == ESOLLCPs[i]
-                                    && previouslyCalculatedLCP.Item2 == "LE" &&
-                                    (previouslyCalculatedLCP.Item4.getStateReportingYear() == term.getStateReportingYear()
-                                    || previouslyCalculatedLCP.Item4.getStateReportingYear() == term.getStateReportingYear().prevReportingYear()))
-                                {
-                                    previouslyCalculated = true;
-                                    break;
-                                }
-                            }
-
-                            if (!previouslyCalculated)
-                            {
-                                Tuple<String, String, String, OrionTerm> newLCP = new Tuple<string, string, string, OrionTerm>(curStudent, "LE", ESOLLCPs[i], term);
-                                calculatedLCPs.Add(newLCP);
-                                studentLCPs.Add(ESOLLCPs[i]);
-                            }
                         }
-
-                        if (!previouslyReportedLCPs.ContainsKey(curStudent))
-                        {
-                            previouslyReportedLCPs.Add(curStudent, studentLCPs);
-                        }
+                        break;
                     }
                 }
+
+                reader.Close();
+
+                comm = new SqlCommand(@"SELECT DISTINCT
+	                                        class.STDNT_ID
+	                                        ,lcp.COMP_POINT_ID
+                                            ,CONVERT(DATE, class.GRD_DT) AS [Grade Date]
+                                        FROM	
+	                                        MIS.dbo.ST_OCP_LCP_A_55 lcp
+	                                        INNER JOIN MIS.dbo.ST_STDNT_CLS_A_235 class ON class.CRS_ID = lcp.CRS_ID
+	                                        INNER JOIN MIS.dbo.UTL_CODE_TABLE_120 code ON code.CODE = class.GRADE
+	                                        INNER JOIN MIS.dbo.UTL_CODE_TABLE_GENERIC_120 gen ON gen.ISN_UTL_CODE_TABLE = code.ISN_UTL_CODE_TABLE
+	                                        LEFT JOIN (SELECT	
+					                                        *
+				                                        FROM
+					                                        StateSubmission.SDB.RecordType5 r5
+					                                        INNER JOIN MIS.dbo.vwTermYearXwalk xwalk ON xwalk.StateReportingTerm = r5.DE1028) SRC ON SRC.DE1021 = class.STDNT_ID
+																										                                          AND SRC.OrionTerm < class.EFF_TRM
+																										                                          AND SRC.DE2105 = lcp.COMP_POINT_ID
+                                        WHERE
+	                                        lcp.CIP_CD = '1533010200'
+	                                        AND class.EFF_TRM = '" + term + @"'
+	                                        AND gen.cnxarraycolumn = '8'
+	                                        AND code.TABLE_NAME = 'GRADE'
+	                                        AND gen.FIELD_VALUE = 'Y'
+	                                        AND lcp.COMP_POINT_TY = 'L9'
+	                                        AND SRC.DE1021 IS NULL", conn);
+
+                reader = comm.ExecuteReader();
+
+                while (reader.Read())
+                {
+                    String studentID = reader["STDNT_ID"].ToString();
+                    String lcpval = reader["COMP_POINT_ID"].ToString();
+                    DateTime gradeDate = DateTime.Parse(reader["Grade Date"].ToString());
+
+                    if (!studentLCPs.ContainsKey(studentID))
+                    {
+                        studentLCPs.Add(studentID, new List<Tuple<string, string>>());
+                    }
+
+                    if (!newLCPs.ContainsKey(studentID))
+                    {
+                        newLCPs.Add(studentID, new List<Tuple<string, string, DateTime>>());
+                    }
+
+                    Tuple<String, String, DateTime> LCP = new Tuple<string, string, DateTime>("1533010200", lcpval, gradeDate);
+
+                    studentLCPs[studentID].Add(new Tuple<string, string>(LCP.Item1, LCP.Item2));
+                    newLCPs[studentID].Add(LCP);
+                }
+
+                reader.Close();
+
             }
 
-            reader.Close();
+            ///////////////////////////////////////////////////////////////////////////////////output
 
-
-
-            comm = new SqlCommand(@"SELECT                                                                      
-                                        class.STDNT_ID                                                          
-                                        ,lcp.COMP_POINT_ID                                                      
-                                    FROM                                                                        
-                                        MIS.dbo.ST_OCP_LCP_A_55 lcp                                             
-                                        INNER JOIN MIS.dbo.ST_STDNT_CLS_A_235 class ON class.CRS_ID = lcp.CRS_ID
-                                    WHERE                                                                       
-                                        lcp.CIP_CD = '1532010303'                                               
-                                        AND class.EFF_TRM = '" + term.ToString() + "'", conn);
-
-            reader = comm.ExecuteReader();
-
-            while (reader.Read())
+            using (StreamWriter output = new StreamWriter("LCPs.csv"))
             {
-                curStudent = reader["STDNT_ID"].ToString();
-                String lcp = reader["COMP_POINT_ID"].ToString();
+                output.WriteLine("STDNT_ID,CIP_CD,LCP,Completion Date");
 
-                bool previouslyCalculated = false;
-
-                Tuple<String, String, OrionTerm> LCP = new Tuple<string, string, OrionTerm>(curStudent, lcp, term);
-
-                foreach (Tuple<String, String, String, OrionTerm> previouslyCalculatedLCP in previouslyCalculatedLCPs)
+                foreach (String studentID in newLCPs.Keys.ToList())
                 {
-                    if (previouslyCalculatedLCP.Item1 == curStudent && previouslyCalculatedLCP.Item3 == lcp
-                        && previouslyCalculatedLCP.Item2 == "LE" &&
-                        (previouslyCalculatedLCP.Item4.getStateReportingYear() == term.getStateReportingYear()
-                        || previouslyCalculatedLCP.Item4.getStateReportingYear() == term.getStateReportingYear().prevReportingYear()))
+                    foreach (Tuple<String, String, DateTime> LCP in newLCPs[studentID])
                     {
-                        previouslyCalculated = true;
-                        break;
+                        output.WriteLine(String.Join(",", studentID, LCP.Item1, LCP.Item2, LCP.Item3));
                     }
-                }
-
-                foreach (Tuple<String, String, String, OrionTerm> previouslyCalculatedLCP in calculatedLCPs)
-                {
-                    if (previouslyCalculatedLCP.Item1 == curStudent && previouslyCalculatedLCP.Item2 == lcp
-                        && previouslyCalculatedLCP.Item2 == "LE" &&
-                        (previouslyCalculatedLCP.Item4.getStateReportingYear() == term.getStateReportingYear()
-                        || previouslyCalculatedLCP.Item4.getStateReportingYear() == term.getStateReportingYear().prevReportingYear()))
-                    {
-                        previouslyCalculated = true;
-                        break;
-                    }
-                }
-
-                if (!previouslyCalculated)
-                {
-                    Tuple<String, String, String, OrionTerm> newLCP = new Tuple<string, string, string, OrionTerm>(curStudent, "LE", lcp, term);
-                    calculatedLCPs.Add(newLCP);
                 }
             }
-
-            reader.Close();
-
-            comm = new SqlCommand(@"SELECT
-	                                    class.STDNT_ID, lcp.COMP_POINT_ID
-                                    FROM
-	                                    MIS.dbo.ST_STDNT_CLS_A_235 class
-	                                    INNER JOIN MIS.dbo.ST_OCP_LCP_A_55 lcp ON class.CRS_ID LIKE REPLACE(lcp.CRS_ID, '*', '%')
-                                    WHERE
-	                                    class.EFF_TRM = '" + term + @"'
-	                                    AND (lcp.END_TRM = '' OR lcp.END_TRM >= '" + term + @"')
-	                                    AND lcp.EFF_TRM <= '" + term + @"'
-	                                    AND class.GRADE IN ('A','B','C','D','P','S')
-	                                    AND lcp.COMP_POINT_TY = 'L9'", conn);
-
-            reader = comm.ExecuteReader();
-
-            while (reader.Read())
-            {
-                curStudent = reader["STDNT_ID"].ToString();
-                String lcp = reader["COMP_POINT_ID"].ToString();
-
-                bool previouslyCalculated = false;
-
-                Tuple<String, String, OrionTerm> LCP = new Tuple<string, string, OrionTerm>(curStudent, lcp, term);
-
-                foreach (Tuple<String, String, String, OrionTerm> previouslyCalculatedLCP in previouslyCalculatedLCPs)
-                {
-                    if (previouslyCalculatedLCP.Item1 == curStudent && previouslyCalculatedLCP.Item3 == lcp
-                        && previouslyCalculatedLCP.Item2 == "L9")
-                    {
-                        previouslyCalculated = true;
-                        break;
-                    }
-                }
-
-                foreach (Tuple<String, String, String, OrionTerm> previouslyCalculatedLCP in calculatedLCPs)
-                {
-                    if (previouslyCalculatedLCP.Item1 == curStudent && previouslyCalculatedLCP.Item2 == lcp
-                        && previouslyCalculatedLCP.Item2 == "L9")
-                    {
-                        previouslyCalculated = true;
-                        break;
-                    }
-                }
-
-                if (!previouslyCalculated)
-                {
-                    Tuple<String, String, String, OrionTerm> newLCP = new Tuple<string, string, string, OrionTerm>(curStudent, "L9", lcp, term);
-                    calculatedLCPs.Add(newLCP);
-                }
-            }
-
-            conn.Close();
-
-            return calculatedLCPs;
         }
     }
+
 
     public class EducationalFunctioningLevel
     {
         public float lowerBound { get; set; }
         public float upperBound { get; set; }
-        
-        
+
     }
 
     public class Test
     {
         public String type { get; set; }
         public String subject { get; set; }
+        public String form { get; set; }
         public DateTime testDate { get; set; }
         public float score { get; set; }
-        
+
     }
 
     public class Course
     {
-        public EducationalFunctioningLevel EFL { get; set; }
+        public int EFL { get; set; }
         public String courseID { get; set; }
+        public String refNum { get; set; }
         public String subject { get; set; }
+        public String type { get; set; }
         public DateTime registrationDate { get; set; }
         public DateTime lastAttDate { get; set; }
+        public OrionTerm term { get; set; }
 
     }
 
@@ -813,10 +1185,38 @@ namespace LCPCalculator
         public String studentID { get; set; }
         public List<Test> tests { get; set; }
         public List<Course> courses { get; set; }
+        public OrionTerm firstTermContinuousEnrollment { get; set; }
 
-        public List<Test> getTestsForDateRange(DateTime from, DateTime to)
+        public Student()
         {
-            return tests.Where(test => test.testDate >= from && test.testDate <= to).ToList();
+            tests = new List<Test>();
+            courses = new List<Course>();
+        }
+
+        public Test[] getTestsForDateRange(DateTime from, DateTime to, String type, String subject = null)
+        {
+            List<Test> testsInRange = tests.Where(test => test.testDate >= from && test.testDate <= to && test.type == type && test.subject == subject).ToList();
+
+            Test[] testArray = testsInRange.ToArray();
+
+            DateTime[] testDates = testsInRange.Select(test => test.testDate).ToArray();
+
+            Array.Sort(testDates, testArray);
+
+            return testArray;
+        }
+
+        public Course[] getCoursesInOrder(String type, String subject = null)
+        {
+            List<Course> requiredCourses = courses.Where(course => course.type == type && course.subject == subject).ToList();
+
+            DateTime[] courseRegistrationDates = requiredCourses.Select(course => course.registrationDate).ToArray();
+
+            Course[] courseArray = requiredCourses.ToArray();
+
+            Array.Sort(courseRegistrationDates, courseArray);
+
+            return courseArray;
         }
     }
 }
