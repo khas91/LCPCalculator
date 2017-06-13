@@ -11,8 +11,8 @@
   DTS:LocaleID="1033"
   DTS:ObjectName="Package"
   DTS:PackageType="5"
-  DTS:VersionBuild="36"
-  DTS:VersionGUID="{CF04DD72-2B50-4E81-85CE-A4203AB61DF1}">
+  DTS:VersionBuild="38"
+  DTS:VersionGUID="{BECF900B-5AB1-446A-9921-90219ACF9323}">
   <DTS:Property
     DTS:Name="PackageFormatVersion">8</DTS:Property>
   <DTS:ConnectionManagers>
@@ -35,11 +35,11 @@
             <DTS:FlatFileColumn
               DTS:ColumnType="Delimited"
               DTS:ColumnDelimiter="_x002C_"
-              DTS:MaximumWidth="10"
+              DTS:MaximumWidth="9"
               DTS:DataType="129"
               DTS:TextQualified="True"
               DTS:ObjectName="StudentID"
-              DTS:DTSID="{4D7B5342-E802-439B-A540-F4BEC88D5482}"
+              DTS:DTSID="{ADC5CC30-C393-4193-B1A0-2D7421684D5F}"
               DTS:CreationName="" />
             <DTS:FlatFileColumn
               DTS:ColumnType="Delimited"
@@ -48,7 +48,7 @@
               DTS:DataType="129"
               DTS:TextQualified="True"
               DTS:ObjectName="Type"
-              DTS:DTSID="{986B83CA-9CC4-4B3B-9A99-20F176A48D44}"
+              DTS:DTSID="{5EB4F694-1BBE-4EBD-8227-7855CA2C821B}"
               DTS:CreationName="" />
             <DTS:FlatFileColumn
               DTS:ColumnType="Delimited"
@@ -57,7 +57,7 @@
               DTS:DataType="129"
               DTS:TextQualified="True"
               DTS:ObjectName="COMP_POINT_ID"
-              DTS:DTSID="{BAE9B524-08B9-4EAE-89AE-477105F7615C}"
+              DTS:DTSID="{175CD03D-557E-4AA5-8FB6-5608C0FEEFC9}"
               DTS:CreationName="" />
             <DTS:FlatFileColumn
               DTS:ColumnType="Delimited"
@@ -66,7 +66,7 @@
               DTS:DataType="129"
               DTS:TextQualified="True"
               DTS:ObjectName="Term"
-              DTS:DTSID="{CF591674-1E6D-4DF2-8745-F64BBE30CCFF}"
+              DTS:DTSID="{47E1AC59-74D3-4620-86FA-732F02F6D7E6}"
               DTS:CreationName="" />
           </DTS:FlatFileColumns>
         </DTS:ConnectionManager>
@@ -120,9 +120,9 @@
         DTS:Name="Arguments">"-m " + @[User::term] + " -x " +  @[User::term]</DTS:PropertyExpression>
       <DTS:ObjectData>
         <ExecuteProcessData
-          Executable="Z:\Stuart\Git Repos\LCPCalculator\Redux\bin\Debug\Redux.exe"
+          Executable="Z:\Stuart\Git Repos\LCPCalculator\LCPCalculator\bin\Debug\LCPCalculator.exe"
           Arguments="-m 20171 -x 20171"
-          WorkingDirectory="Z:\Stuart\Git Repos\LCPCalculator\Redux\bin\Debug" />
+          WorkingDirectory="Z:\Stuart\Git Repos\LCPCalculator\LCPCalculator\bin\Debug" />
       </DTS:ObjectData>
     </DTS:Executable>
     <DTS:Executable
@@ -360,7 +360,7 @@
                       refId="Package\Import LCPs to database\Derived Column.Inputs[Derived Column Input].Columns[StudentID]"
                       cachedCodepage="1252"
                       cachedDataType="str"
-                      cachedLength="10"
+                      cachedLength="9"
                       cachedName="StudentID"
                       errorOrTruncationOperation="Computation"
                       errorRowDisposition="FailComponent"
@@ -574,7 +574,7 @@
                       errorOrTruncationOperation="Conversion"
                       errorRowDisposition="FailComponent"
                       externalMetadataColumnId="Package\Import LCPs to database\Flat File Source.Outputs[Flat File Source Output].ExternalColumns[StudentID]"
-                      length="10"
+                      length="9"
                       lineageId="Package\Import LCPs to database\Flat File Source.Outputs[Flat File Source Output].Columns[StudentID]"
                       name="StudentID"
                       truncationRowDisposition="FailComponent">
@@ -662,7 +662,7 @@
                       refId="Package\Import LCPs to database\Flat File Source.Outputs[Flat File Source Output].ExternalColumns[StudentID]"
                       codePage="1252"
                       dataType="str"
-                      length="10"
+                      length="9"
                       name="StudentID" />
                     <externalMetadataColumn
                       refId="Package\Import LCPs to database\Flat File Source.Outputs[Flat File Source Output].ExternalColumns[Type]"
@@ -797,7 +797,7 @@
                       refId="Package\Import LCPs to database\OLE DB Destination.Inputs[OLE DB Destination Input].Columns[StudentID]"
                       cachedCodepage="1252"
                       cachedDataType="str"
-                      cachedLength="10"
+                      cachedLength="9"
                       cachedName="StudentID"
                       externalMetadataColumnId="Package\Import LCPs to database\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[STDNT_ID]"
                       lineageId="Package\Import LCPs to database\Flat File Source.Outputs[Flat File Source Output].Columns[StudentID]" />
