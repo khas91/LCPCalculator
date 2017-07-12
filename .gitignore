@@ -207,3 +207,7 @@ ModelManifest.xml
 *.xlsx
 /Redux/NewRecordType5s.xlsx
 *.xlsx
+/data/LCPs.csv
+/LCP Diff.laccdb
+*.csv
+*.laccdb

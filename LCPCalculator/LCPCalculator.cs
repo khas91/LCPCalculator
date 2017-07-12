@@ -29,7 +29,7 @@ namespace Redux
             EducationalFunctioningLevel[] abeEFLs = new EducationalFunctioningLevel[4];
 
 
-            for (OrionTerm term = new OrionTerm("20172"); term <= new OrionTerm("20172"); term++)
+            for (OrionTerm term = new OrionTerm("20171"); term <= new OrionTerm("20171"); term++)
             {
 
 
@@ -293,6 +293,7 @@ namespace Redux
                     currentStudent = studentID;
                 }
 
+
                 reader.Close();
 
                 comm = new SqlCommand("TRUNCATE TABLE Adhoc.dbo.StudentCurrentContinuousEnrollmentPeriodStartDate", conn);
@@ -303,18 +304,18 @@ namespace Redux
                 DataRow row;
 
                 column = new DataColumn();
-                column.DataType = System.Type.GetType("System.String");
+                column.DataType = Type.GetType("System.String");
                 column.ColumnName = "STDNT_ID";
 
                 table.Columns.Add(column);
 
                 column = new DataColumn();
-                column.DataType = System.Type.GetType("System.String");
+                column.DataType = Type.GetType("System.String");
                 column.ColumnName = "Term";
                 table.Columns.Add(column);
 
                 column = new DataColumn();
-                column.DataType = System.Type.GetType("System.String");
+                column.DataType = Type.GetType("System.String");
                 column.ColumnName = "Type";
                 table.Columns.Add(column);
 
@@ -331,6 +332,8 @@ namespace Redux
                     row["Term"] = ESOLstudentCurrentContinuousEnrollmentPeriodStartTerm[student];
                     row["Type"] = "ESOL";
                     table.Rows.Add(row);
+
+                    studentDictionary[student].firstTermContinuousEnrollment = new OrionTerm(ESOLstudentCurrentContinuousEnrollmentPeriodStartTerm[student]);
                 }
 
                 SqlBulkCopy bulkCopy = new SqlBulkCopy(conn);
@@ -442,13 +445,13 @@ namespace Redux
                 table = new DataTable("ReadingOrListeningDesignations");
 
                 column = new DataColumn();
-                column.DataType = System.Type.GetType("System.String");
+                column.DataType = Type.GetType("System.String");
                 column.ColumnName = "STDNT_ID";
 
                 table.Columns.Add(column);
 
                 column = new DataColumn();
-                column.DataType = System.Type.GetType("System.String");
+                column.DataType = Type.GetType("System.String");
                 column.ColumnName = "DESIGNATION";
                 table.Columns.Add(column);
 
@@ -460,7 +463,8 @@ namespace Redux
                 {
                     row = table.NewRow();
                     row["STDNT_ID"] = student;
-                    row["DESIGNATION"] = ESOLstudentReadingorListeningDesignations[student];
+                    row["DESIGNATION"] = (studentDictionary[student].firstTermContinuousEnrollment < new OrionTerm("20171")
+                                           && term >= new OrionTerm("20171")) ? "R" : ESOLstudentReadingorListeningDesignations[student];
                     table.Rows.Add(row);
                 }
 
@@ -593,7 +597,7 @@ namespace Redux
                         {
                             Tuple<String, String, DateTime> LCP = new Tuple<string, string, DateTime>("1532010300", esolLCPs[j], postTests.Last().testDate);
 
-                            if (!studentLCPs[studentID].Any(prev => prev.Equals(LCP)))
+                            if (!studentLCPs[studentID].Any(prev => prev.Item1 == LCP.Item1 && prev.Item2 == LCP.Item2))
                             {
                                 studentLCPs[studentID].Add(new Tuple<String, String>(LCP.Item1, LCP.Item2));
                                 newLCPs[studentID].Add(LCP);
@@ -766,24 +770,21 @@ namespace Redux
 
                 reader.Close();
 
-                comm = new SqlCommand("TRUNCATE TABLE Adhoc.dbo.StudentCurrentContinuousEnrollmentPeriodStartDate", conn);
-                comm.ExecuteNonQuery();
-
                 table = new DataTable("StudentCurrentContinuousEnrollmentPeriodStartDate");
 
                 column = new DataColumn();
-                column.DataType = System.Type.GetType("System.String");
+                column.DataType = Type.GetType("System.String");
                 column.ColumnName = "STDNT_ID";
 
                 table.Columns.Add(column);
 
                 column = new DataColumn();
-                column.DataType = System.Type.GetType("System.String");
+                column.DataType = Type.GetType("System.String");
                 column.ColumnName = "Term";
                 table.Columns.Add(column);
 
                 column = new DataColumn();
-                column.DataType = System.Type.GetType("System.String");
+                column.DataType = Type.GetType("System.String");
                 column.ColumnName = "Type";
                 table.Columns.Add(column);
 
@@ -1069,12 +1070,12 @@ namespace Redux
                                 {
                                     studentLCPs[studentID].Add(new Tuple<string, string>(LCP.Item1, LCP.Item2));
                                     newLCPs[studentID].Add(LCP);
-                                    break;
+                                    goto Exit;
                                 }
                             }
                         }
-                        break;
                     }
+                    Exit:;
                 }
 
                 reader.Close();
@@ -1130,11 +1131,62 @@ namespace Redux
 
                 reader.Close();
 
+                comm = new SqlCommand(@"SELECT DISTINCT
+	                                        class.STDNT_ID
+	                                        ,lcp.COMP_POINT_ID
+                                            ,CONVERT(DATE, class.GRD_DT) AS [Grade Date]
+                                        FROM	
+	                                        MIS.dbo.ST_OCP_LCP_A_55 lcp
+	                                        INNER JOIN MIS.dbo.ST_STDNT_CLS_A_235 class ON class.CRS_ID = lcp.CRS_ID
+	                                        INNER JOIN MIS.dbo.UTL_CODE_TABLE_120 code ON code.CODE = class.GRADE
+	                                        INNER JOIN MIS.dbo.UTL_CODE_TABLE_GENERIC_120 gen ON gen.ISN_UTL_CODE_TABLE = code.ISN_UTL_CODE_TABLE
+	                                        LEFT JOIN (SELECT	
+					                                        *
+				                                        FROM
+					                                        StateSubmission.SDB.RecordType5 r5
+					                                        INNER JOIN MIS.dbo.vwTermYearXwalk xwalk ON xwalk.StateReportingTerm = r5.DE1028) SRC ON SRC.DE1021 = class.STDNT_ID
+																										                                          AND SRC.OrionTerm < class.EFF_TRM
+																										                                          AND SRC.DE2105 = lcp.COMP_POINT_ID
+                                        WHERE
+	                                        lcp.CIP_CD = '1532010303'
+	                                        AND class.EFF_TRM = '" + term + @"'
+	                                        AND gen.cnxarraycolumn = '8'
+	                                        AND code.TABLE_NAME = 'GRADE'
+	                                        AND gen.FIELD_VALUE = 'Y'
+	                                        AND lcp.COMP_POINT_TY = 'LE'
+	                                        AND SRC.DE1021 IS NULL", conn);
+
+                reader = comm.ExecuteReader();
+
+                while (reader.Read())
+                {
+                    String studentID = reader["STDNT_ID"].ToString();
+                    String lcpval = reader["COMP_POINT_ID"].ToString();
+                    DateTime gradeDate = DateTime.Parse(reader["Grade Date"].ToString());
+
+                    if (!studentLCPs.ContainsKey(studentID))
+                    {
+                        studentLCPs.Add(studentID, new List<Tuple<string, string>>());
+                    }
+
+                    if (!newLCPs.ContainsKey(studentID))
+                    {
+                        newLCPs.Add(studentID, new List<Tuple<string, string, DateTime>>());
+                    }
+
+                    Tuple<String, String, DateTime> LCP = new Tuple<string, string, DateTime>("1532010303", lcpval, gradeDate);
+
+                    studentLCPs[studentID].Add(new Tuple<string, string>(LCP.Item1, LCP.Item2));
+                    newLCPs[studentID].Add(LCP);
+                }
+
+                reader.Close();
+
             }
 
             ///////////////////////////////////////////////////////////////////////////////////output
 
-            using (StreamWriter output = new StreamWriter("LCPs.csv"))
+            using (StreamWriter output = new StreamWriter("../../../data/LCPs.csv"))
             {
                 output.WriteLine("STDNT_ID,CIP_CD,LCP,Completion Date");
 
